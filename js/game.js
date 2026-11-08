@@ -23,7 +23,17 @@ async function enter(host,c){
  net.onPeers(()=>{if(isHost&&G.ph=='lobby'||isHost)bc0()});
  G={ph:'lobby',q:[]};ovk='';onG();if(host)setInterval(()=>{if(isHost)net.emit('g',G).catch(()=>{})},1000)}
 function bc0(){}
-let mq=0;function menuBtn(){if(Date.now()<mq){location.reload();return}mq=Date.now()+3000;const b=$('#mb');b.textContent='Yakin? Ketuk lagi';setTimeout(()=>{b.textContent='☰ Menu'},3000)}
+let mq=0;
+function updateMenuBtnText(txt){
+ const b=$('#mb');
+ if(b)b.innerHTML=`${gi('menu',18)}<span>${txt}</span>`;
+}
+function menuBtn(){
+ if(Date.now()<mq){location.reload();return}
+ mq=Date.now()+3000;
+ updateMenuBtnText('Yakin? Ketuk lagi');
+ setTimeout(()=>updateMenuBtnText('Menu'),3000);
+}
 
 function setTopic(t){
  TP=t;
@@ -39,18 +49,17 @@ function renderQuestionDeck(){
   deck.innerHTML=`<div class="q-empty">Belum ada soal yang dibuat.</div>`;
   return;
  }
- const icons=['🌿','❄️','🌋','🍭'];
  const perRound=Math.max(1,Math.floor(list.length/TOTAL_ROUNDS));
  let html='';
  for(let r=0;r<TOTAL_ROUNDS;r++){
   const start=r*perRound;
   const end=r===TOTAL_ROUNDS-1?list.length:start+perRound;
   const sub=list.slice(start,end);
-  html+=`<div class="q-round-hdr"><span>${icons[r]} Babak ${r+1}: ${esc(MAPS[r].n)}</span><span>${sub.length} Soal</span></div>`;
+  html+=`<div class="q-round-hdr"><span>Babak ${r+1}: ${esc(MAPS[r].n)}</span><span>${sub.length} Soal</span></div>`;
   sub.forEach((item,idx)=>{
    const qNum=start+idx+1;
-   const wrongs=item.slice(2,5).map(w=>`<span class="q-opt w">✗ ${esc(w)}</span>`).join('');
-   html+=`<div class="q-item"><div class="q-item-top"><span class="q-num">#${qNum}</span><span>${esc(item[0])}</span></div><div class="q-opts"><span class="q-opt ok">✓ ${esc(item[1])}</span>${wrongs}</div></div>`;
+   const wrongs=item.slice(2,5).map(w=>`<span class="q-opt w">${esc(w)}</span>`).join('');
+   html+=`<div class="q-item"><div class="q-item-top"><span class="q-num">#${qNum}</span><span>${esc(item[0])}</span></div><div class="q-opts"><span class="q-opt ok">${esc(item[1])}</span>${wrongs}</div></div>`;
   });
  }
  deck.innerHTML=html;
@@ -61,7 +70,6 @@ async function proceed(){
  if($('#cfd'))DUR=+$('#cfd').value;
  if($('#jm'))JM=parseInt($('#jm').value,10)||20;
  let q=parseQ();
- // Jika guru belum klik "Buat Soal", otomatis buatkan soal terlebih dahulu!
  if(!q.length){
   const ok=await ai();
   if(!ok)return;
@@ -84,16 +92,16 @@ function cnt(){
  if(box){
   if(c){
    box.className='status-box ready';
-   box.innerHTML=`✅ <b>${c} Soal Siap Dimainkan!</b> (${trk} Soal per Babak)`;
+   box.innerHTML=`${gi('check',20)}<span><b>${c} Soal Siap Dimainkan!</b> (${trk} Soal per Babak)</span>`;
   }else{
    box.className='status-box';
-   box.innerHTML=`💡 Ketik materi soal di atas lalu klik <b>Buat Soal Otomatis</b>`;
+   box.innerHTML=`${gi('ai',20)}<span>Ketik materi soal di atas lalu klik <b>Buat Soal Otomatis</b></span>`;
   }
  }
  const det=$('#q-details');
  if(det)det.style.display=c?'block':'none';
  const sumEl=$('#q-sum-txt');
- if(sumEl)sumEl.textContent=`📋 Lihat Daftar Soal (${c} Soal)`;
+ if(sumEl)sumEl.innerHTML=`Lihat Daftar Soal (${c} Soal)`;
  renderQuestionDeck();
 }
 
@@ -110,10 +118,12 @@ function saveQS(){
 async function ai(){
  const b=$('#aib'),tp=($('#tp')?$('#tp').value.trim():TP)||'Pengetahuan Umum',jm=parseInt($('#jm')?.value,10)||JM||20,box=$('#cn2');
  JM=jm;TP=tp;saveQS();
- if(b){b.disabled=true;b.textContent='⏳ Sedang Membuat Soal...';}
- if(box){box.className='status-box';box.textContent='⏳ AI sedang membuat soal, mohon tunggu sebentar...';}
+ if(b){b.disabled=true;b.innerHTML=`${gi('clock',22)}<span>Sedang Membuat Soal...</span>`;}
+ if(box){box.className='status-box';box.innerHTML=`${gi('clock',20)}<span>AI sedang membuat soal, mohon tunggu sebentar...</span>`;}
  try{
-  const questions=await generateQuestionsFromServer(tp,jm,(statusMsg)=>{if(box)box.textContent='⏳ '+statusMsg});
+  const questions=await generateQuestionsFromServer(tp,jm,(statusMsg)=>{
+   if(box)box.innerHTML=`${gi('clock',20)}<span>${esc(statusMsg)}</span>`;
+  });
   const c=x=>String(x??'').replace(/[|\n\r]/g,' ').trim();
   const lines=questions.map(x=>[x.q,x.a,...x.w.slice(0,3)].map(c).join('|'));
   QS=lines.join('\n');
@@ -125,11 +135,11 @@ async function ai(){
   return true;
  }catch(e){
   if(typeof SFX!=='undefined')SFX.wrong();
-  if(box){box.className='status-box';box.innerHTML=`<span style="color:var(--bad,#e5484d)">❌ ${esc(e.message)}</span>`;}
+  if(box){box.className='status-box';box.innerHTML=`${gi('cross',20)}<span style="color:var(--bad,#e5484d)">${esc(e.message)}</span>`;}
   alert(e.message);
   return false;
  }finally{
-  if(b){b.disabled=false;b.textContent='✨ BUAT SOAL OTOMATIS';}
+  if(b){b.disabled=false;b.innerHTML=`${gi('ai',24)}<span>BUAT SOAL OTOMATIS</span>`;}
  }
 }
 
@@ -161,7 +171,8 @@ function ifpQ(){
   const b=bots.find(x=>x.id==id),fin=b.pr.p>=TRACK,lock=now<b.st;
   if(!fin)b.cur=getQ(G.r,b.qi||0,k);
   const fRank=fin?finishRank(id):0;
-  return `<div class="card ic" style="border:6px solid ${b.col};padding:8px;text-align:center"><b>${esc(b.pr.n)} \u00b7 ${b.pr.p}/${TRACK}${(b.sk||0)%3==2&&!fin?' 🔥':''}</b>${fin?`<h2>🏁 LOLOS! #${fRank}</h2><div style="font-size:14px;opacity:.85">⏱ ${((b.pr.tt||0)/1000).toFixed(1)} dtk</div>`:`<div class=iq>${esc(b.cur.q)}</div><div class=o>${b.cur.o.map((t,i)=>`<button ${lock?'disabled':''} onclick="ifpA('${id}',${i})" class=ib>${esc(t)}</button>`).join('')}</div>`}</div>`
+  const fireBadge=(b.sk||0)%3==2&&!fin?gi('fire',18):'';
+  return `<div class="card ic" style="border:6px solid ${b.col};padding:8px;text-align:center"><b><span>${esc(b.pr.n)} \u00b7 ${b.pr.p}/${TRACK}</span>${fireBadge}</b>${fin?`<h2 style="display:flex;align-items:center;justify-content:center;gap:6px">${gi('flag',24)}<span>LOLOS #${fRank}</span></h2><div style="font-size:14px;opacity:.85">${((b.pr.tt||0)/1000).toFixed(1)} dtk</div>`:`<div class=iq>${esc(b.cur.q)}</div><div class=o>${b.cur.o.map((t,i)=>`<button ${lock?'disabled':''} onclick="ifpA('${id}',${i})" class=ib>${esc(t)}</button>`).join('')}</div>`}</div>`
  }).join('')+'</div>'
 }
 
@@ -300,6 +311,7 @@ function onG(){if(G.cfg&&(G.cfg.t!==TRACK||G.cfg.d!==DUR)){TRACK=G.cfg.t;DUR=G.c
 let ovk='';
 function ui(){
  if(typeof SFX!=='undefined')SFX.updateMuteButton();
+ updateMenuBtnText('Menu');
  const ps=players(),k=mv+G.ph+G.r+(G.al||[]).length+ps.length+(G.sv||[]).length;
  if(k!==ovk){ovk=k;ov(ps)}
  showQ();hud()
@@ -308,88 +320,93 @@ function ov(ps){
  const o=$('#ov'),old=$('#cq')?$('#cq').value:'';let h='';
  const nm=ps.map(p=>`<i>${esc(p.pr.n)}</i>`).join('');
  if(G.ph=='menu'){
-  const bk=`<button class=bk onclick="go('home')">⬅ KEMBALI</button>`;
+  const bk=`<button class=bk onclick="go('home')">${gi('back',20)}<span>KEMBALI</span></button>`;
   const op=(a,c)=>a.map(([v,t])=>`<option value="${v}" ${v==c?'selected':''}>${t}</option>`).join('');
   const topics=['Matematika','IPA & Sains','Pancasila','Sejarah','Pengetahuan Umum','Bahasa Inggris'];
-  h=mv=='setup'?`<div class=mn><div class=bd style="width:min(94vw,660px)">
-   <h2>${mode=='ifp'?'🎮 MULAI MAIN':'🌐 BUAT RUANG'}</h2>
+  h=mv=='setup'?`<div class=mn><div class=bd>
+   <h2>${gi(mode=='ifp'?'play':'globe',26)}<span>${mode=='ifp'?'MULAI MAIN':'BUAT RUANG'}</span></h2>
 
    <div class="ed-card">
-    <b class="ed-title">${mode=='ifp'?'1️⃣ Nama 4 Pemain (Boleh Dikosongkan)':'1️⃣ Nama Guru / Pembuat Ruang'}</b>
+    <div class="ed-title"><span class="step-badge">1</span><span>${mode=='ifp'?'Nama 4 Pemain (Boleh Dikosongkan)':'Nama Guru / Pembuat Ruang'}</span></div>
     ${mode=='ifp'?`<div class=ifg>
      <div class="p-wrap"><span class="p-tag" style="background:#e5484d">1</span><input id=n0 placeholder="Merah" maxlength=10></div>
      <div class="p-wrap"><span class="p-tag" style="background:#2f7de1">2</span><input id=n1 placeholder="Biru" maxlength=10></div>
      <div class="p-wrap"><span class="p-tag" style="background:#2bb673">3</span><input id=n2 placeholder="Hijau" maxlength=10></div>
      <div class="p-wrap"><span class="p-tag" style="background:#f5a623">4</span><input id=n3 placeholder="Kuning" maxlength=10></div>
-    </div>`:`<div class="p-wrap"><span class="p-tag" style="background:#8b4de0">👑</span><input id=nm placeholder="Ketik nama Anda..." maxlength=14></div>`}
+    </div>`:`<div class="p-wrap"><span class="p-tag" style="background:#8b4de0">1</span><input id=nm placeholder="Ketik nama Anda..." maxlength=14></div>`}
    </div>
 
    <div class="ed-card">
-    <b class="ed-title">2️⃣ Pilih atau Ketik Materi Soal</b>
+    <div class="ed-title"><span class="step-badge">2</span><span>Pilih atau Ketik Materi Soal</span></div>
     <div class="chip-row">
      ${topics.map(t=>`<button type="button" class="chip" onclick="setTopic('${t}')">${t}</button>`).join('')}
     </div>
     <input id=tp placeholder="Contoh: Perkalian, Hewan, Kemerdekaan..." value="${esc(TP)}" oninput="TP=this.value">
     <div class=ifg>
-     <label style="font-size:13px;font-weight:800">Jumlah Soal<select id=jm onchange="cnt()">${op([
+     <label>Jumlah Soal<select id=jm onchange="cnt()">${op([
       [12,'12 Soal (Lintasan Pendek)'],
       [20,'20 Soal (Lintasan Sedang)'],
       [32,'32 Soal (Lintasan Panjang)']
      ],JM)}</select></label>
-     <label style="font-size:13px;font-weight:800">Waktu per Babak<select id=cfd>${op([
+     <label>Waktu per Babak<select id=cfd>${op([
       [45,'45 Detik'],
       [70,'70 Detik'],
       [90,'90 Detik'],
       [120,'120 Detik']
      ],DUR)}</select></label>
     </div>
-    <button id=aib class="gb g-d s" style="width:100%" onclick="ai()">✨ BUAT SOAL OTOMATIS</button>
+    <button id=aib class="gb g-d s" onclick="ai()">${gi('ai',24)}<span>BUAT SOAL OTOMATIS</span></button>
     <div id=cn2 class="status-box"></div>
     <details id="q-details" style="display:none;margin:2px 0 0">
-     <summary id="q-sum-txt" style="font-size:14px;font-weight:800">📋 Lihat Daftar Soal</summary>
+     <summary id="q-sum-txt" style="font-size:14px;font-weight:800;cursor:pointer;color:#7c3aed">Lihat Daftar Soal</summary>
      <div id="q-deck" class="q-deck" style="margin-top:8px"></div>
     </details>
     <textarea id=cq style="display:none"></textarea>
    </div>
 
-   <button class="gb g-b s" onclick="proceed()">🚀 MULAI MAIN ▶</button>
+   <button class="gb g-b s" onclick="proceed()">${gi('rocket',26)}<span>MULAI MAIN</span></button>
   </div>${bk}</div>`
-  :mv=='join'?`<div class=mn><div class=bd><h2>🎟️ GABUNG RUANG</h2><input id=nm placeholder="Nama kamu" maxlength=14><input id=jc class=cd placeholder="KODE" maxlength=5><button class="gb g-c s" onclick="enter(false,$('#jc').value.trim().toUpperCase())">MASUK RUANG ▶</button></div>${bk}</div>`
+  :mv=='join'?`<div class=mn><div class=bd><h2>${gi('ticket',26)}<span>GABUNG RUANG</span></h2><input id=nm placeholder="Nama kamu" maxlength=14><input id=jc class=cd placeholder="KODE" maxlength=5><button class="gb g-c s" onclick="enter(false,$('#jc').value.trim().toUpperCase())">${gi('play',24)}<span>MASUK RUANG</span></button></div>${bk}</div>`
   :`<div class=mn><div class=logo><span>PINTA</span><span class=l2>RIA</span><b>3D</b></div><div class=tag>Jawab cepat, lompati rintangan, jadilah juara!</div>
-   <button class="gb g-a" onclick="go('setup','ifp')">▶️ MULAI</button>
-   <button class="gb g-b" onclick="go('setup','online')">🌐 BUAT RUANG</button>
-   <button class="gb g-c" onclick="go('join')">🎟️ GABUNG RUANG</button></div>`
+   <button class="gb g-a" onclick="go('setup','ifp')">${gi('play',34)}<span>MULAI</span></button>
+   <button class="gb g-b" onclick="go('setup','online')">${gi('globe',34)}<span>BUAT RUANG</span></button>
+   <button class="gb g-c" onclick="go('join')">${gi('ticket',34)}<span>GABUNG RUANG</span></button></div>`
  }
  else if(G.ph=='lobby'){
   const firstQuota=keepFor(0,ps.length);
   h=`<div class=card>
-   ${ifp?'<h2>🎮 Siap Berlomba!</h2>':`<div>Kode Ruang</div><div class=code>${esc(code)}</div>`}
-   <div>⏱ ${DUR} dtk/babak · 🏁 ${TRACK} langkah/babak · 🏆 Babak 1: <b>${firstQuota}/${ps.length} Tercepat Lolos</b></div>
-   <h2>Pemain (${ps.length})</h2>
+   <h2 class="modal-ribbon">${gi('play',24)}<span>${ifp?'SIAP BERLOMBA':'RUANG TUNGGU'}</span></h2>
+   ${ifp?'':`<div>Kode Ruang</div><div class=code>${esc(code)}</div>`}
+   <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;font-family:'Nunito',sans-serif;font-weight:800">
+    <span>${gi('clock',18)} ${DUR} dtk/babak</span>
+    <span>${gi('flag',18)} ${TRACK} langkah/babak</span>
+    <span>${gi('crown',18)} Babak 1: <b>${firstQuota}/${ps.length} Tercepat Lolos</b></span>
+   </div>
+   <h3 style="margin:0">${gi('users',22)} Pemain (${ps.length})</h3>
    <div class=pl>${nm||'Menunggu pemain bergabung…'}</div>
-   ${isHost?`<button onclick="startGame()">▶ Mulai Babak 1</button>`:'<h2>⏳ Menunggu guru memulai…</h2>'}
+   ${isHost?`<button class="gb g-a s" onclick="startGame()">${gi('play',24)}<span>MULAI BABAK 1</span></button>`:'<h3>Menunggu guru memulai…</h3>'}
   </div>`;
  }
  else if(G.ph=='between'){
   const nextR=Math.min(G.r+1,3);
   const nextQuota=keepFor(nextR,(G.sv||[]).length);
   h=`<div class=card>
-   <h2>🏁 Babak ${G.r+1} Selesai!</h2>
-   <div>Selanjutnya: <b>Babak ${G.r+2} (${MAPS[nextR].n})</b> · ${nextR===3?'👑 <b>GRAND FINAL: 1 Tercepat Juara!</b>':`🏆 Kuota Lolos: <b>${nextQuota} Tercepat</b>`}</div>
+   <h2 class="modal-ribbon">${gi('flag',24)}<span>BABAK ${G.r+1} SELESAI</span></h2>
+   <div style="font-family:'Nunito',sans-serif;font-weight:800">Selanjutnya: <b>Babak ${G.r+2} (${MAPS[nextR].n})</b> · ${nextR===3?`<b>GRAND FINAL: 1 Tercepat Juara!</b>`:`Kuota Lolos: <b>${nextQuota} Tercepat</b>`}</div>
    <div class=rs>${(G.res||[]).map((x,i)=>{
     const qualified=i<G.kp;
-    return `<div class="${qualified?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?'🏁 '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${qualified?'✅ LOLOS':'❌ GUGUR'}</u></div>`
+    return `<div class="${qualified?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?gi('flag',16)+' '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${qualified?gi('check',16)+' LOLOS':gi('cross',16)+' GUGUR'}</u></div>`
    }).join('')}</div>
-   ${isHost?`<div class=row><button onclick="next()">➡ Lanjut Babak ${G.r+2}: ${MAPS[nextR].n}</button></div>`:'<div>Menunggu babak berikutnya…</div>'}
+   ${isHost?`<button class="gb g-b s" onclick="next()">${gi('play',22)}<span>LANJUT BABAK ${G.r+2}: ${MAPS[nextR].n}</span></button>`:'<div>Menunggu babak berikutnya…</div>'}
   </div>`;
  }
  else if(G.ph=='end'){
-  const T=G.top||[],c=['#ffd54f','#cfd8dc','#ffab76'],ht=[155,115,85],ord=[1,0,2];
+  const T=G.top||[],c=['#ffd54f','#cfd8dc','#ffab76'],ht=[165,130,105],ord=[1,0,2],medals=['medal1','medal2','medal3'];
   h=`<div class=card>
-   <h1>👑 JUARA PINTARIA!</h1>
-   <div class=pd>${ord.filter(i=>T[i]).map(i=>`<div style="background:${c[i]};height:${ht[i]}px">${['🥇','🥈','🥉'][i]}<br>${esc(T[i])}</div>`).join('')}</div>
-   <div class=rs style="width:100%">${(G.res||[]).map((x,i)=>`<div class="${i===0?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?'🏁 '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${i===0?'👑 JUARA 1':'Finalis'}</u></div>`).join('')}</div>
-   ${isHost?'<button onclick="again()">🔄 Main Lagi</button>':''}
+   <h2 class="modal-ribbon">${gi('crown',26)}<span>JUARA PINTARIA</span></h2>
+   <div class=pd>${ord.filter(i=>T[i]).map(i=>`<div style="background:${c[i]};height:${ht[i]}px">${gi(medals[i],42)}<span>#${i+1} ${esc(T[i])}</span></div>`).join('')}</div>
+   <div class=rs style="width:100%">${(G.res||[]).map((x,i)=>`<div class="${i===0?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?gi('flag',16)+' '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${i===0?gi('crown',18)+' JUARA 1':'Finalis'}</u></div>`).join('')}</div>
+   ${isHost?`<button class="gb g-a s" onclick="again()">${gi('play',22)}<span>MAIN LAGI</span></button>`:''}
   </div>`;
  }
  o.innerHTML=h;
@@ -400,10 +417,10 @@ function ov(ps){
 
 function showQ(){
  const el=$('#qp');if(ifp){ifpQ();return}
- if(G.ph!='play'||hostOnly()||!alive()){el.innerHTML=G.ph=='play'&&!hostOnly()&&!alive()?'<div class=card>❌ Kamu sudah gugur · Menonton babak ini 👀</div>':'';qk='';return}
+ if(G.ph!='play'||hostOnly()||!alive()){el.innerHTML=G.ph=='play'&&!hostOnly()&&!alive()?`<div class=card>${gi('cross',22)} <b>Kamu sudah gugur · Menonton babak ini</b></div>`:'';qk='';return}
  if(mp.p>=TRACK){
   const fRank=finishRank(meId());
-  el.innerHTML=`<div class=card><h2>🏁 LOLOS! (Tercepat #${fRank||1})</h2><div>Menunggu kuota babak terpenuhi…</div></div>`;
+  el.innerHTML=`<div class=card><h2>${gi('flag',26)} LOLOS! (Tercepat #${fRank||1})</h2><div>Menunggu kuota babak terpenuhi…</div></div>`;
   qk='';return
  }
  const k=G.r+'-'+qi;if(k==qk)return;qk=k;cur=getQ(G.r,qi,0);
@@ -435,7 +452,7 @@ function ans(i,b){
 }
 
 function hud(){
- $('#mb').style.display=G.ph=='menu'?'none':'block';
+ $('#mb').style.display=G.ph=='menu'?'none':'inline-flex';
  $('#rl').textContent=G.ph=='play'?MAPS[G.r].rule:'';
  document.body.classList.toggle('ifp',!!ifp&&G.ph=='play');
  const r=G.ph=='play'||G.ph=='between'||G.ph=='end'?G.r:0;
@@ -445,8 +462,8 @@ function hud(){
   const pl=players().filter(p=>G.al&&G.al.includes(p.id)&&p.pr.r===r);
   const fin=pl.filter(p=>(p.pr.p||0)>=TRACK).length;
   const quota=G.stopAt||G.kp||1;
-  const quotaLabel=r===3?`👑 Final (Juara: ${fin}/1)`:`🏁 Lolos: ${fin}/${quota}`;
-  h=`<span>${MAPS[r].n} · Babak ${r+1}/4</span>${G.ph=='play'?`<span style="background:#2bb673cc"><b>${quotaLabel}</b></span><span>⏱ ${l} dtk</span>`:''}<span>👥 ${(G.al&&G.ph!='lobby'?G.al:players()).length} Pemain</span>`
+  const quotaLabel=r===3?`${gi('crown',18)}<b>Final: ${fin}/1</b>`:`${gi('flag',18)}<b>Lolos: ${fin}/${quota}</b>`;
+  h=`<span>${MAPS[r].n} · Babak ${r+1}/4</span>${G.ph=='play'?`<span style="background:#1fa855">${quotaLabel}</span><span>${gi('clock',18)} ${l} dtk</span>`:''}<span>${gi('users',18)} ${(G.al&&G.ph!='lobby'?G.al:players()).length} Pemain</span>`
  }
  if($('#hud').dataset.h!==h){$('#hud').innerHTML=h;$('#hud').dataset.h=h}
 }

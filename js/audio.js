@@ -186,7 +186,8 @@ const SFX = (() => {
   function updateMuteButton() {
     const btn = document.getElementById('sb');
     if (btn) {
-      btn.textContent = muted ? '🔇 Suara Mati' : '🔊 Suara Aktif';
+      const ico = typeof gi === 'function' ? gi(muted ? 'soundOff' : 'soundOn', 22) : '';
+      btn.innerHTML = `${ico}<span>${muted ? 'Suara Mati' : 'Suara Aktif'}</span>`;
       btn.className = 'gb ' + (muted ? 'alt' : 'g-a');
     }
   }
