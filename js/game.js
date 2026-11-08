@@ -442,11 +442,11 @@ function ov(ps){
   return `<i>${dot}<span>${esc(p.pr.n)}</span></i>`;
  }).join('');
  if(G.ph=='menu'){
-  const bk=`<button class=bk onclick="go('home')">${gi('back',22)}<span>KEMBALI KE MENU</span></button>`;
+  const bk=`<button class=bk onclick="go('home')"><span>KEMBALI KE MENU</span></button>`;
   const op=(a,c)=>a.map(([v,t])=>`<option value="${v}" ${v==c?'selected':''}>${t}</option>`).join('');
   const topics=['Matematika','IPA & Sains','Pancasila','Sejarah','Pengetahuan Umum','Bahasa Inggris'];
   h=mv=='setup'?`<div class=mn><div class="bd bd-land">
-   <h2>${gi(mode=='ifp'?'play':'globe',32)}<span>${mode=='ifp'?'MULAI MAIN':'BUAT RUANG'}</span></h2>
+   <h2><span>${mode=='ifp'?'MULAI MAIN':'BUAT RUANG'}</span></h2>
 
    <div class="setup-grid">
     <!-- GRID 1: TAHAP 1 PEMILIHAN KARAKTER & NAMA KARAKTER -->
@@ -461,16 +461,16 @@ function ov(ps){
     <div class="ed-card">
      <div class="ed-title"><span class="step-badge">2</span><span>Tahap 2: Buat Soal & Pengaturan Game</span></div>
      <label>Pilih Cepat atau Ketik Materi Soal
-      <div class="chip-row" style="margin-top:4px">
+      <div class="chip-row" style="margin-top:6px">
        ${topics.map(t=>`<button type="button" class="chip" onclick="setTopic('${t}')">${t}</button>`).join('')}
       </div>
      </label>
      <input id=tp placeholder="Ketik topik soal, mis: Perkalian, Hewan, Kemerdekaan..." value="${esc(TP)}" oninput="TP=this.value">
      <div class=ifg>
       <label>Jumlah Soal & Lintasan<select id=jm onchange="cnt()">${op([
-       [12,'12 Soal (Lintasan Pendek)'],
-       [20,'20 Soal (Lintasan Sedang)'],
-       [32,'32 Soal (Lintasan Panjang)']
+       [12,'12 Soal (3 Soal / Babak)'],
+       [20,'20 Soal (5 Soal / Babak)'],
+       [32,'32 Soal (8 Soal / Babak)']
       ],JM)}</select></label>
       <label>Waktu per Babak<select id=cfd>${op([
        [45,'45 Detik'],
@@ -479,27 +479,27 @@ function ov(ps){
        [120,'120 Detik']
       ],DUR)}</select></label>
      </div>
-     <button id=aib class="gb g-d s" onclick="ai()">${gi('ai',30)}<span>BUAT SOAL OTOMATIS</span></button>
+     <button id=aib class="gb g-d s" onclick="ai()">${gi('ai',32)}<span>BUAT SOAL OTOMATIS</span></button>
      <div id=cn2 class="status-box"></div>
      <details id="q-details" style="display:none;margin:0">
-      <summary id="q-sum-txt" style="font-size:13.5px;font-weight:900;cursor:pointer;color:#7c3aed;font-family:'Nunito',sans-serif">Lihat Daftar Soal</summary>
-      <div id="q-deck" class="q-deck" style="margin-top:6px"></div>
+      <summary id="q-sum-txt" style="font-size:16px;font-weight:900;cursor:pointer;color:#7c3aed;font-family:'Nunito',sans-serif">Lihat Daftar Soal</summary>
+      <div id="q-deck" class="q-deck" style="margin-top:8px"></div>
      </details>
      <textarea id=cq style="display:none"></textarea>
-     <button class="gb g-b s" style="margin-top:auto" onclick="proceed()">${gi('rocket',32)}<span>${mode=='ifp'?'MULAI MAIN SEKARANG':'BUAT RUANG SEKARANG'}</span></button>
+     <button class="gb g-b s" style="margin-top:auto" onclick="proceed()"><span>${mode=='ifp'?'MULAI MAIN SEKARANG':'BUAT RUANG SEKARANG'}</span></button>
     </div>
    </div>
   </div>${bk}</div>`
   :mv=='join'?`<div class=mn><div class=bd>
-   <h2>${gi('ticket',32)}<span>GABUNG RUANG</span></h2>
+   <h2><span>GABUNG RUANG</span></h2>
    ${renderCharCard('me',true)}
    <label>Kode Ruang Permainan<input id=jc class=cd placeholder="KODE" maxlength=5></label>
-   <button class="gb g-c s" onclick="enter(false,$('#jc').value.trim().toUpperCase())">${gi('play',30)}<span>MASUK RUANG</span></button>
+   <button class="gb g-c s" onclick="enter(false,$('#jc').value.trim().toUpperCase())"><span>MASUK RUANG</span></button>
   </div>${bk}</div>`
   :`<div class=mn><div class=logo><span>PINTA</span><span class=l2>RIA</span><b>3D</b></div><div class=tag>Jawab cepat, lompati rintangan, jadilah juara!</div>
-   <button class="gb g-a" onclick="go('setup','ifp')">${gi('play',42)}<span>MULAI</span></button>
-   <button class="gb g-b" onclick="go('setup','online')">${gi('globe',42)}<span>BUAT RUANG</span></button>
-   <button class="gb g-c" onclick="go('join')">${gi('ticket',42)}<span>GABUNG RUANG</span></button></div>`
+   <button class="gb g-a" onclick="go('setup','ifp')"><span>MULAI</span></button>
+   <button class="gb g-b" onclick="go('setup','online')"><span>BUAT RUANG</span></button>
+   <button class="gb g-c" onclick="go('join')"><span>GABUNG RUANG</span></button></div>`
  }
  else if(G.ph=='lobby'){
   const firstQuota=keepFor(0,ps.length);
