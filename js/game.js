@@ -2,6 +2,7 @@
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* ---------- state & network ---------- */
 let SRC='ai',SJ='ai',JM=20,TP='',mode='',sk=0,mv='home',NM='',ifp=false,iq=0,QS='',net=null,solo=false,isHost=false,code='',G={ph:'menu'},name='',lastR=-9,qi=0,qk='',cur=null,stun=0,hostT=0,localEnd=0,localStart=0,mp={p:0,tt:0,r:-1},bots=[],endingRound=false;
+let pCols=[0,1,2,3],pNames=['','','',''],myColIdx=0;
 const hostOnly=()=>isHost&&!solo;
 try{
  QS=localStorage.getItem('lk_qs')||'';
@@ -9,16 +10,20 @@ try{
  const initQ=QS.split('\n').filter(l=>l.split('|').length>=3).length;
  if(initQ){JM=initQ;TRACK=calcTrackFromQuestions(initQ)}
 }catch(e){}
-function peersL(){return solo?[...(ifp?[]:[{id:'me',isMe:true,pr:mp}]),...bots.map(b=>({id:b.id,isMe:false,pr:b.pr,col:b.col}))]:net?net.peers().map(p=>({id:p.peer,isMe:p.sameTab,pr:p.presence||{}})):[]}
+function peersL(){return solo?[...(ifp?[]:[{id:'me',isMe:true,pr:mp,col:mp.col}]),...bots.map(b=>({id:b.id,isMe:false,pr:b.pr,col:b.col}))]:net?net.peers().map(p=>({id:p.peer,isMe:p.sameTab,pr:p.presence||{},col:(p.presence&&p.presence.col)||null})):[]}
 const players=()=>peersL().filter(p=>!p.pr.h);
 const meId=()=>peersL().find(p=>p.isMe)?.id;
 const alive=()=>G.al&&G.al.includes(meId());
 function pres(o){Object.assign(mp,o);if(!solo&&net)net.presence(o).catch(()=>{})}
 function bc(){if(!solo&&net)net.emit('g',G).catch(()=>{});onG()}
 async function enter(host,c){
- saveQS();name=($('#nm')?$('#nm').value.trim():'Pemain').slice(0,14)||'Pemain';isHost=host;
+ saveQS();
+ const selCol=(typeof CHAR_COLORS!=='undefined'&&CHAR_COLORS[myColIdx])?CHAR_COLORS[myColIdx]:{name:'Pemain',hex:'#2f7de1'};
+ name=($('#nm')?$('#nm').value.trim():NM).slice(0,14)||selCol.name;
+ NM=name;
+ isHost=host;
  try{const rm=window.claude&&await claude.use('room');if(!rm)throw 0;net=await rm.join('lk-'+c)}catch(e){alert('Mode ruang online membutuhkan server aktif. Gunakan tombol "MULAI" untuk langsung bermain.');return}
- code=c;solo=false;mp={n:name,h:host?1:0,p:0,tt:0,r:-1};net.presence(mp);
+ code=c;solo=false;mp={n:name,col:selCol.hex,h:host?1:0,p:0,tt:0,r:-1};net.presence(mp);
  net.on('g',m=>{if(!isHost&&m.data){G=m.data;onG()}});
  net.onPeers(()=>{if(isHost&&G.ph=='lobby'||isHost)bc0()});
  G={ph:'lobby',q:[]};ovk='';onG();if(host)setInterval(()=>{if(isHost)net.emit('g',G).catch(()=>{})},1000)}
@@ -26,7 +31,7 @@ function bc0(){}
 let mq=0;
 function updateMenuBtnText(txt){
  const b=$('#mb');
- if(b)b.innerHTML=`${gi('menu',18)}<span>${txt}</span>`;
+ if(b)b.innerHTML=`${gi('menu',22)}<span>${txt}</span>`;
 }
 function menuBtn(){
  if(Date.now()<mq){location.reload();return}
@@ -39,6 +44,103 @@ function setTopic(t){
  TP=t;
  if($('#tp'))$('#tp').value=t;
  try{localStorage.setItem('lk_tp',t)}catch(e){}
+}
+
+/* ---------- Pemilihan Karakter & Warna 3D (Tahap 1) ---------- */
+function getCharCol(idx){
+ const list=typeof CHAR_COLORS!=='undefined'?CHAR_COLORS:[
+  {id:'merah',name:'Merah',hex:'#e5484d',light:'#ffe5e7'},
+  {id:'biru',name:'Biru',hex:'#2f7de1',light:'#e3f0ff'},
+  {id:'hijau',name:'Hijau',hex:'#2bb673',light:'#dcfce7'},
+  {id:'kuning',name:'Kuning',hex:'#f5a623',light:'#fef3c7'}
+ ];
+ return list[((idx%list.length)+list.length)%list.length];
+}
+
+function pickCharCol(slot,colIdx){
+ const list=typeof CHAR_COLORS!=='undefined'?CHAR_COLORS:[];
+ const len=list.length||4;
+ const nextIdx=((colIdx%len)+len)%len;
+ if(slot==='me'){
+  myColIdx=nextIdx;
+ }else{
+  pCols[slot]=nextIdx;
+  if(typeof DEMO!=='undefined'&&DEMO[slot]){
+   DEMO[slot].col=getCharCol(nextIdx).hex;
+   const avKey='d'+slot;
+   if(typeof avs!=='undefined'&&avs[avKey]){
+    sc.remove(avs[avKey].g);
+    sc.remove(avs[avKey].fx);
+    delete avs[avKey];
+   }
+  }
+ }
+ const col=getCharCol(nextIdx);
+ const card=$('#cc_'+slot);
+ if(card){
+  card.style.background=col.light;
+  card.style.borderColor=col.hex;
+ }
+ const pill=$('#cp_'+slot);
+ if(pill){
+  pill.style.background=col.hex;
+  pill.textContent='Warna '+col.name;
+ }
+ const img=$('#ci_'+slot);
+ if(img&&typeof ICONS!=='undefined'&&ICONS['char_'+col.id]){
+  img.src=ICONS['char_'+col.id];
+  img.style.transform='scale(1.14)';
+  setTimeout(()=>{if(img)img.style.transform='scale(1)';},160);
+ }
+ const lbl=$('#cl_'+slot);
+ if(lbl){
+  lbl.style.background=col.hex;
+  lbl.textContent='Karakter '+col.name;
+ }
+ const sw=$('#cs_'+slot);
+ if(sw){
+  sw.querySelectorAll('.char-dot').forEach((d,i)=>{
+   d.classList.toggle('active',i===nextIdx);
+  });
+ }
+ const inp=slot==='me'?$('#nm'):$('#n'+slot);
+ if(inp){
+  inp.placeholder=`Ketik nama (${col.name})...`;
+ }
+}
+
+function cycleCharCol(slot,dir){
+ const curIdx=slot==='me'?myColIdx:(pCols[slot]||0);
+ pickCharCol(slot,curIdx+dir);
+}
+
+function renderCharCard(slot,isSingle=false){
+ const colIdx=slot==='me'?myColIdx:(pCols[slot]||0);
+ const col=getCharCol(colIdx);
+ const list=typeof CHAR_COLORS!=='undefined'?CHAR_COLORS:[col];
+ const val=slot==='me'?NM:(pNames[slot]||'');
+ const inpId=slot==='me'?'nm':'n'+slot;
+ const onInp=slot==='me'?'NM=this.value':`pNames[${slot}]=this.value`;
+ const titleTxt=slot==='me'?'Karakter Kamu':`Pemain ${slot+1}`;
+ const charSrc=(typeof ICONS!=='undefined'&&ICONS['char_'+col.id])?ICONS['char_'+col.id]:'';
+ return `<div class="char-card ${isSingle?'single':''}" id="cc_${slot}" style="background:${col.light};border-color:${col.hex}">
+  <div class="char-card-top">
+   <span>${titleTxt}</span>
+   <span class="char-col-pill" id="cp_${slot}" style="background:${col.hex}">Warna ${col.name}</span>
+  </div>
+  <div class="char-stage">
+   <button type="button" class="char-arrow" onclick="cycleCharCol(${slot==='me'?"'me'":slot},-1)" title="Ganti Warna Karakter">&#9664;</button>
+   <div class="char-avatar-box">
+    <img class="char-avatar-img" id="ci_${slot}" src="${charSrc}" alt="Karakter ${col.name}" draggable="false">
+    <span class="char-model-label" id="cl_${slot}" style="background:${col.hex}">Karakter ${col.name}</span>
+   </div>
+   <button type="button" class="char-arrow" onclick="cycleCharCol(${slot==='me'?"'me'":slot},1)" title="Ganti Warna Karakter">&#9654;</button>
+  </div>
+  <div class="char-swatches" id="cs_${slot}">
+   ${list.map((c,ci)=>`<button type="button" class="char-dot ${ci===colIdx?'active':''}" style="background:${c.hex}" title="Pilih Karakter ${c.name}" onclick="pickCharCol(${slot==='me'?"'me'":slot},${ci})"></button>`).join('')}
+  </div>
+  <input id="${inpId}" class="char-inp" placeholder="Ketik nama (${col.name})..." value="${esc(val)}" maxlength="12" oninput="${onInp}">
+ </div>`;
 }
 
 function renderQuestionDeck(){
@@ -92,10 +194,10 @@ function cnt(){
  if(box){
   if(c){
    box.className='status-box ready';
-   box.innerHTML=`${gi('check',20)}<span><b>${c} Soal Siap Dimainkan!</b> (${trk} Soal per Babak)</span>`;
+   box.innerHTML=`${gi('check',24)}<span><b>${c} Soal Siap Dimainkan!</b> (${trk} Soal per Babak)</span>`;
   }else{
    box.className='status-box';
-   box.innerHTML=`${gi('ai',20)}<span>Ketik materi soal di atas lalu klik <b>Buat Soal Otomatis</b></span>`;
+   box.innerHTML=`${gi('ai',24)}<span>Ketik materi soal di atas lalu klik <b>Buat Soal Otomatis</b></span>`;
   }
  }
  const det=$('#q-details');
@@ -105,10 +207,18 @@ function cnt(){
  renderQuestionDeck();
 }
 
-function go(v,m){saveQS();if($('#nm'))NM=$('#nm').value;if(m)mode=m;mv=v;ovk='';ui()}
+function go(v,m){
+ saveQS();
+ if($('#nm'))NM=$('#nm').value;
+ [0,1,2,3].forEach(i=>{if($('#n'+i))pNames[i]=$('#n'+i).value;});
+ if(m)mode=m;
+ mv=v;ovk='';ui()
+}
 function saveQS(){
  if($('#cq'))QS=$('#cq').value;
  if($('#tp'))TP=$('#tp').value;
+ [0,1,2,3].forEach(i=>{if($('#n'+i))pNames[i]=$('#n'+i).value;});
+ if($('#nm'))NM=$('#nm').value;
  try{
   localStorage.setItem('lk_qs',QS);
   localStorage.setItem('lk_tp',TP);
@@ -118,11 +228,11 @@ function saveQS(){
 async function ai(){
  const b=$('#aib'),tp=($('#tp')?$('#tp').value.trim():TP)||'Pengetahuan Umum',jm=parseInt($('#jm')?.value,10)||JM||20,box=$('#cn2');
  JM=jm;TP=tp;saveQS();
- if(b){b.disabled=true;b.innerHTML=`${gi('clock',22)}<span>Sedang Membuat Soal...</span>`;}
- if(box){box.className='status-box';box.innerHTML=`${gi('clock',20)}<span>AI sedang membuat soal, mohon tunggu sebentar...</span>`;}
+ if(b){b.disabled=true;b.innerHTML=`${gi('clock',28)}<span>Sedang Membuat Soal...</span>`;}
+ if(box){box.className='status-box';box.innerHTML=`${gi('clock',24)}<span>AI sedang membuat soal, mohon tunggu sebentar...</span>`;}
  try{
   const questions=await generateQuestionsFromServer(tp,jm,(statusMsg)=>{
-   if(box)box.innerHTML=`${gi('clock',20)}<span>${esc(statusMsg)}</span>`;
+   if(box)box.innerHTML=`${gi('clock',24)}<span>${esc(statusMsg)}</span>`;
   });
   const c=x=>String(x??'').replace(/[|\n\r]/g,' ').trim();
   const lines=questions.map(x=>[x.q,x.a,...x.w.slice(0,3)].map(c).join('|'));
@@ -135,18 +245,27 @@ async function ai(){
   return true;
  }catch(e){
   if(typeof SFX!=='undefined')SFX.wrong();
-  if(box){box.className='status-box';box.innerHTML=`${gi('cross',20)}<span style="color:var(--bad,#e5484d)">${esc(e.message)}</span>`;}
+  if(box){box.className='status-box';box.innerHTML=`${gi('cross',24)}<span style="color:var(--bad,#e5484d)">${esc(e.message)}</span>`;}
   alert(e.message);
   return false;
  }finally{
-  if(b){b.disabled=false;b.innerHTML=`${gi('ai',24)}<span>BUAT SOAL OTOMATIS</span>`;}
+  if(b){b.disabled=false;b.innerHTML=`${gi('ai',30)}<span>BUAT SOAL OTOMATIS</span>`;}
  }
 }
 
 function startIfp(){
  saveQS();solo=true;ifp=true;isHost=true;code='MULAI';
- const cl=['#e5484d','#2f7de1','#2bb673','#f5a623'],dn=['Merah','Biru','Hijau','Kuning'];
- bots=[0,1,2,3].map(i=>({id:'p'+i,col:cl[i],st:0,pr:{n:($('#n'+i)?$('#n'+i).value.trim():'')||dn[i],p:0,tt:0,r:-1}}));
+ bots=[0,1,2,3].map(i=>{
+  const col=getCharCol(pCols[i]||0);
+  const typed=($('#n'+i)?$('#n'+i).value.trim():pNames[i].trim());
+  return {
+   id:'p'+i,
+   col:col.hex,
+   colId:col.id,
+   st:0,
+   pr:{n:typed||col.name,p:0,tt:0,r:-1,col:col.hex}
+  };
+ });
  const q=parseQ();
  TRACK=calcTrackFromQuestions(q.length);
  mapI=-1;
@@ -171,8 +290,8 @@ function ifpQ(){
   const b=bots.find(x=>x.id==id),fin=b.pr.p>=TRACK,lock=now<b.st;
   if(!fin)b.cur=getQ(G.r,b.qi||0,k);
   const fRank=fin?finishRank(id):0;
-  const fireBadge=(b.sk||0)%3==2&&!fin?gi('fire',18):'';
-  return `<div class="card ic" style="border:6px solid ${b.col};padding:8px;text-align:center"><b><span>${esc(b.pr.n)} \u00b7 ${b.pr.p}/${TRACK}</span>${fireBadge}</b>${fin?`<h2 style="display:flex;align-items:center;justify-content:center;gap:6px">${gi('flag',24)}<span>LOLOS #${fRank}</span></h2><div style="font-size:14px;opacity:.85">${((b.pr.tt||0)/1000).toFixed(1)} dtk</div>`:`<div class=iq>${esc(b.cur.q)}</div><div class=o>${b.cur.o.map((t,i)=>`<button ${lock?'disabled':''} onclick="ifpA('${id}',${i})" class=ib>${esc(t)}</button>`).join('')}</div>`}</div>`
+  const fireBadge=(b.sk||0)%3==2&&!fin?gi('fire',20):'';
+  return `<div class="card ic" style="border:6px solid ${b.col};padding:8px;text-align:center"><b><span>${esc(b.pr.n)} \u00b7 ${b.pr.p}/${TRACK}</span>${fireBadge}</b>${fin?`<h2 style="display:flex;align-items:center;justify-content:center;gap:6px">${gi('flag',26)}<span>LOLOS #${fRank}</span></h2><div style="font-size:14px;opacity:.85">${((b.pr.tt||0)/1000).toFixed(1)} dtk</div>`:`<div class=iq>${esc(b.cur.q)}</div><div class=o>${b.cur.o.map((t,i)=>`<button ${lock?'disabled':''} onclick="ifpA('${id}',${i})" class=ib>${esc(t)}</button>`).join('')}</div>`}</div>`
  }).join('')+'</div>'
 }
 
@@ -318,109 +437,118 @@ function ui(){
 }
 function ov(ps){
  const o=$('#ov'),old=$('#cq')?$('#cq').value:'';let h='';
- const nm=ps.map(p=>`<i>${esc(p.pr.n)}</i>`).join('');
+ const nm=ps.map(p=>{
+  const dot=p.col?`<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${p.col};border:2px solid #241454"></span>`:'';
+  return `<i>${dot}<span>${esc(p.pr.n)}</span></i>`;
+ }).join('');
  if(G.ph=='menu'){
-  const bk=`<button class=bk onclick="go('home')">${gi('back',20)}<span>KEMBALI</span></button>`;
+  const bk=`<button class=bk onclick="go('home')">${gi('back',22)}<span>KEMBALI KE MENU</span></button>`;
   const op=(a,c)=>a.map(([v,t])=>`<option value="${v}" ${v==c?'selected':''}>${t}</option>`).join('');
   const topics=['Matematika','IPA & Sains','Pancasila','Sejarah','Pengetahuan Umum','Bahasa Inggris'];
-  h=mv=='setup'?`<div class=mn><div class=bd>
-   <h2>${gi(mode=='ifp'?'play':'globe',26)}<span>${mode=='ifp'?'MULAI MAIN':'BUAT RUANG'}</span></h2>
+  h=mv=='setup'?`<div class=mn><div class="bd bd-land">
+   <h2>${gi(mode=='ifp'?'play':'globe',32)}<span>${mode=='ifp'?'MULAI MAIN':'BUAT RUANG'}</span></h2>
 
-   <div class="ed-card">
-    <div class="ed-title"><span class="step-badge">1</span><span>${mode=='ifp'?'Nama 4 Pemain (Boleh Dikosongkan)':'Nama Guru / Pembuat Ruang'}</span></div>
-    ${mode=='ifp'?`<div class=ifg>
-     <div class="p-wrap"><span class="p-tag" style="background:#e5484d">1</span><input id=n0 placeholder="Merah" maxlength=10></div>
-     <div class="p-wrap"><span class="p-tag" style="background:#2f7de1">2</span><input id=n1 placeholder="Biru" maxlength=10></div>
-     <div class="p-wrap"><span class="p-tag" style="background:#2bb673">3</span><input id=n2 placeholder="Hijau" maxlength=10></div>
-     <div class="p-wrap"><span class="p-tag" style="background:#f5a623">4</span><input id=n3 placeholder="Kuning" maxlength=10></div>
-    </div>`:`<div class="p-wrap"><span class="p-tag" style="background:#8b4de0">1</span><input id=nm placeholder="Ketik nama Anda..." maxlength=14></div>`}
-   </div>
-
-   <div class="ed-card">
-    <div class="ed-title"><span class="step-badge">2</span><span>Pilih atau Ketik Materi Soal</span></div>
-    <div class="chip-row">
-     ${topics.map(t=>`<button type="button" class="chip" onclick="setTopic('${t}')">${t}</button>`).join('')}
+   <div class="setup-grid">
+    <!-- GRID 1: TAHAP 1 PEMILIHAN KARAKTER & NAMA KARAKTER -->
+    <div class="ed-card">
+     <div class="ed-title"><span class="step-badge">1</span><span>Tahap 1: Pilih Karakter & Nama Pemain</span></div>
+     ${mode=='ifp'?`<div class="char-grid">
+      ${[0,1,2,3].map(i=>renderCharCard(i,false)).join('')}
+     </div>`:`${renderCharCard('me',true)}`}
     </div>
-    <input id=tp placeholder="Contoh: Perkalian, Hewan, Kemerdekaan..." value="${esc(TP)}" oninput="TP=this.value">
-    <div class=ifg>
-     <label>Jumlah Soal<select id=jm onchange="cnt()">${op([
-      [12,'12 Soal (Lintasan Pendek)'],
-      [20,'20 Soal (Lintasan Sedang)'],
-      [32,'32 Soal (Lintasan Panjang)']
-     ],JM)}</select></label>
-     <label>Waktu per Babak<select id=cfd>${op([
-      [45,'45 Detik'],
-      [70,'70 Detik'],
-      [90,'90 Detik'],
-      [120,'120 Detik']
-     ],DUR)}</select></label>
-    </div>
-    <button id=aib class="gb g-d s" onclick="ai()">${gi('ai',24)}<span>BUAT SOAL OTOMATIS</span></button>
-    <div id=cn2 class="status-box"></div>
-    <details id="q-details" style="display:none;margin:2px 0 0">
-     <summary id="q-sum-txt" style="font-size:14px;font-weight:800;cursor:pointer;color:#7c3aed">Lihat Daftar Soal</summary>
-     <div id="q-deck" class="q-deck" style="margin-top:8px"></div>
-    </details>
-    <textarea id=cq style="display:none"></textarea>
-   </div>
 
-   <button class="gb g-b s" onclick="proceed()">${gi('rocket',26)}<span>MULAI MAIN</span></button>
+    <!-- GRID 2: TAHAP 2 PEMBUATAN SOAL & PENGATURAN GAME -->
+    <div class="ed-card">
+     <div class="ed-title"><span class="step-badge">2</span><span>Tahap 2: Buat Soal & Pengaturan Game</span></div>
+     <label>Pilih Cepat atau Ketik Materi Soal
+      <div class="chip-row" style="margin-top:4px">
+       ${topics.map(t=>`<button type="button" class="chip" onclick="setTopic('${t}')">${t}</button>`).join('')}
+      </div>
+     </label>
+     <input id=tp placeholder="Ketik topik soal, mis: Perkalian, Hewan, Kemerdekaan..." value="${esc(TP)}" oninput="TP=this.value">
+     <div class=ifg>
+      <label>Jumlah Soal & Lintasan<select id=jm onchange="cnt()">${op([
+       [12,'12 Soal (Lintasan Pendek)'],
+       [20,'20 Soal (Lintasan Sedang)'],
+       [32,'32 Soal (Lintasan Panjang)']
+      ],JM)}</select></label>
+      <label>Waktu per Babak<select id=cfd>${op([
+       [45,'45 Detik'],
+       [70,'70 Detik'],
+       [90,'90 Detik'],
+       [120,'120 Detik']
+      ],DUR)}</select></label>
+     </div>
+     <button id=aib class="gb g-d s" onclick="ai()">${gi('ai',30)}<span>BUAT SOAL OTOMATIS</span></button>
+     <div id=cn2 class="status-box"></div>
+     <details id="q-details" style="display:none;margin:0">
+      <summary id="q-sum-txt" style="font-size:13.5px;font-weight:900;cursor:pointer;color:#7c3aed;font-family:'Nunito',sans-serif">Lihat Daftar Soal</summary>
+      <div id="q-deck" class="q-deck" style="margin-top:6px"></div>
+     </details>
+     <textarea id=cq style="display:none"></textarea>
+     <button class="gb g-b s" style="margin-top:auto" onclick="proceed()">${gi('rocket',32)}<span>${mode=='ifp'?'MULAI MAIN SEKARANG':'BUAT RUANG SEKARANG'}</span></button>
+    </div>
+   </div>
   </div>${bk}</div>`
-  :mv=='join'?`<div class=mn><div class=bd><h2>${gi('ticket',26)}<span>GABUNG RUANG</span></h2><input id=nm placeholder="Nama kamu" maxlength=14><input id=jc class=cd placeholder="KODE" maxlength=5><button class="gb g-c s" onclick="enter(false,$('#jc').value.trim().toUpperCase())">${gi('play',24)}<span>MASUK RUANG</span></button></div>${bk}</div>`
+  :mv=='join'?`<div class=mn><div class=bd>
+   <h2>${gi('ticket',32)}<span>GABUNG RUANG</span></h2>
+   ${renderCharCard('me',true)}
+   <label>Kode Ruang Permainan<input id=jc class=cd placeholder="KODE" maxlength=5></label>
+   <button class="gb g-c s" onclick="enter(false,$('#jc').value.trim().toUpperCase())">${gi('play',30)}<span>MASUK RUANG</span></button>
+  </div>${bk}</div>`
   :`<div class=mn><div class=logo><span>PINTA</span><span class=l2>RIA</span><b>3D</b></div><div class=tag>Jawab cepat, lompati rintangan, jadilah juara!</div>
-   <button class="gb g-a" onclick="go('setup','ifp')">${gi('play',34)}<span>MULAI</span></button>
-   <button class="gb g-b" onclick="go('setup','online')">${gi('globe',34)}<span>BUAT RUANG</span></button>
-   <button class="gb g-c" onclick="go('join')">${gi('ticket',34)}<span>GABUNG RUANG</span></button></div>`
+   <button class="gb g-a" onclick="go('setup','ifp')">${gi('play',42)}<span>MULAI</span></button>
+   <button class="gb g-b" onclick="go('setup','online')">${gi('globe',42)}<span>BUAT RUANG</span></button>
+   <button class="gb g-c" onclick="go('join')">${gi('ticket',42)}<span>GABUNG RUANG</span></button></div>`
  }
  else if(G.ph=='lobby'){
   const firstQuota=keepFor(0,ps.length);
   h=`<div class=card>
-   <h2 class="modal-ribbon">${gi('play',24)}<span>${ifp?'SIAP BERLOMBA':'RUANG TUNGGU'}</span></h2>
+   <h2 class="modal-ribbon">${gi('play',28)}<span>${ifp?'SIAP BERLOMBA':'RUANG TUNGGU'}</span></h2>
    ${ifp?'':`<div>Kode Ruang</div><div class=code>${esc(code)}</div>`}
    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center;font-family:'Nunito',sans-serif;font-weight:800">
-    <span>${gi('clock',18)} ${DUR} dtk/babak</span>
-    <span>${gi('flag',18)} ${TRACK} langkah/babak</span>
-    <span>${gi('crown',18)} Babak 1: <b>${firstQuota}/${ps.length} Tercepat Lolos</b></span>
+    <span>${gi('clock',20)} ${DUR} dtk/babak</span>
+    <span>${gi('flag',20)} ${TRACK} langkah/babak</span>
+    <span>${gi('crown',20)} Babak 1: <b>${firstQuota}/${ps.length} Tercepat Lolos</b></span>
    </div>
-   <h3 style="margin:0">${gi('users',22)} Pemain (${ps.length})</h3>
+   <h3 style="margin:0;display:flex;align-items:center;gap:8px">${gi('users',24)}<span>Pemain (${ps.length})</span></h3>
    <div class=pl>${nm||'Menunggu pemain bergabung…'}</div>
-   ${isHost?`<button class="gb g-a s" onclick="startGame()">${gi('play',24)}<span>MULAI BABAK 1</span></button>`:'<h3>Menunggu guru memulai…</h3>'}
+   ${isHost?`<button class="gb g-a s" onclick="startGame()">${gi('play',28)}<span>MULAI BABAK 1</span></button>`:'<h3>Menunggu guru memulai…</h3>'}
   </div>`;
  }
  else if(G.ph=='between'){
   const nextR=Math.min(G.r+1,3);
   const nextQuota=keepFor(nextR,(G.sv||[]).length);
   h=`<div class=card>
-   <h2 class="modal-ribbon">${gi('flag',24)}<span>BABAK ${G.r+1} SELESAI</span></h2>
+   <h2 class="modal-ribbon">${gi('flag',28)}<span>BABAK ${G.r+1} SELESAI</span></h2>
    <div style="font-family:'Nunito',sans-serif;font-weight:800">Selanjutnya: <b>Babak ${G.r+2} (${MAPS[nextR].n})</b> · ${nextR===3?`<b>GRAND FINAL: 1 Tercepat Juara!</b>`:`Kuota Lolos: <b>${nextQuota} Tercepat</b>`}</div>
    <div class=rs>${(G.res||[]).map((x,i)=>{
     const qualified=i<G.kp;
-    return `<div class="${qualified?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?gi('flag',16)+' '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${qualified?gi('check',16)+' LOLOS':gi('cross',16)+' GUGUR'}</u></div>`
+    return `<div class="${qualified?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?gi('flag',18)+' '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${qualified?gi('check',18)+' LOLOS':gi('cross',18)+' GUGUR'}</u></div>`
    }).join('')}</div>
-   ${isHost?`<button class="gb g-b s" onclick="next()">${gi('play',22)}<span>LANJUT BABAK ${G.r+2}: ${MAPS[nextR].n}</span></button>`:'<div>Menunggu babak berikutnya…</div>'}
+   ${isHost?`<button class="gb g-b s" onclick="next()">${gi('play',26)}<span>LANJUT BABAK ${G.r+2}: ${MAPS[nextR].n}</span></button>`:'<div>Menunggu babak berikutnya…</div>'}
   </div>`;
  }
  else if(G.ph=='end'){
   const T=G.top||[],c=['#ffd54f','#cfd8dc','#ffab76'],ht=[165,130,105],ord=[1,0,2],medals=['medal1','medal2','medal3'];
   h=`<div class=card>
-   <h2 class="modal-ribbon">${gi('crown',26)}<span>JUARA PINTARIA</span></h2>
-   <div class=pd>${ord.filter(i=>T[i]).map(i=>`<div style="background:${c[i]};height:${ht[i]}px">${gi(medals[i],42)}<span>#${i+1} ${esc(T[i])}</span></div>`).join('')}</div>
-   <div class=rs style="width:100%">${(G.res||[]).map((x,i)=>`<div class="${i===0?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?gi('flag',16)+' '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${i===0?gi('crown',18)+' JUARA 1':'Finalis'}</u></div>`).join('')}</div>
-   ${isHost?`<button class="gb g-a s" onclick="again()">${gi('play',22)}<span>MAIN LAGI</span></button>`:''}
+   <h2 class="modal-ribbon">${gi('crown',30)}<span>JUARA PINTARIA</span></h2>
+   <div class=pd>${ord.filter(i=>T[i]).map(i=>`<div style="background:${c[i]};height:${ht[i]}px">${gi(medals[i],48)}<span>#${i+1} ${esc(T[i])}</span></div>`).join('')}</div>
+   <div class=rs style="width:100%">${(G.res||[]).map((x,i)=>`<div class="${i===0?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?gi('flag',18)+' '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${i===0?gi('crown',20)+' JUARA 1':'Finalis'}</u></div>`).join('')}</div>
+   ${isHost?`<button class="gb g-a s" onclick="again()">${gi('play',26)}<span>MAIN LAGI</span></button>`:''}
   </div>`;
  }
  o.innerHTML=h;
  if($('#cq'))$('#cq').value=old||QS;
- if($('#nm'))$('#nm').value=NM;
  if($('#cn2'))cnt();
 }
 
 function showQ(){
  const el=$('#qp');if(ifp){ifpQ();return}
- if(G.ph!='play'||hostOnly()||!alive()){el.innerHTML=G.ph=='play'&&!hostOnly()&&!alive()?`<div class=card>${gi('cross',22)} <b>Kamu sudah gugur · Menonton babak ini</b></div>`:'';qk='';return}
+ if(G.ph!='play'||hostOnly()||!alive()){el.innerHTML=G.ph=='play'&&!hostOnly()&&!alive()?`<div class=card>${gi('cross',24)} <b>Kamu sudah gugur · Menonton babak ini</b></div>`:'';qk='';return}
  if(mp.p>=TRACK){
   const fRank=finishRank(meId());
-  el.innerHTML=`<div class=card><h2>${gi('flag',26)} LOLOS! (Tercepat #${fRank||1})</h2><div>Menunggu kuota babak terpenuhi…</div></div>`;
+  el.innerHTML=`<div class=card><h2>${gi('flag',28)} LOLOS! (Tercepat #${fRank||1})</h2><div>Menunggu kuota babak terpenuhi…</div></div>`;
   qk='';return
  }
  const k=G.r+'-'+qi;if(k==qk)return;qk=k;cur=getQ(G.r,qi,0);
@@ -462,8 +590,8 @@ function hud(){
   const pl=players().filter(p=>G.al&&G.al.includes(p.id)&&p.pr.r===r);
   const fin=pl.filter(p=>(p.pr.p||0)>=TRACK).length;
   const quota=G.stopAt||G.kp||1;
-  const quotaLabel=r===3?`${gi('crown',18)}<b>Final: ${fin}/1</b>`:`${gi('flag',18)}<b>Lolos: ${fin}/${quota}</b>`;
-  h=`<span>${MAPS[r].n} · Babak ${r+1}/4</span>${G.ph=='play'?`<span style="background:#1fa855">${quotaLabel}</span><span>${gi('clock',18)} ${l} dtk</span>`:''}<span>${gi('users',18)} ${(G.al&&G.ph!='lobby'?G.al:players()).length} Pemain</span>`
+  const quotaLabel=r===3?`${gi('crown',20)}<b>Final: ${fin}/1</b>`:`${gi('flag',20)}<b>Lolos: ${fin}/${quota}</b>`;
+  h=`<span>${MAPS[r].n} · Babak ${r+1}/4</span>${G.ph=='play'?`<span style="background:#1fa855">${quotaLabel}</span><span>${gi('clock',20)} ${l} dtk</span>`:''}<span>${gi('users',20)} ${(G.al&&G.ph!='lobby'?G.al:players()).length} Pemain</span>`
  }
  if($('#hud').dataset.h!==h){$('#hud').innerHTML=h;$('#hud').dataset.h=h}
 }
@@ -519,7 +647,7 @@ function frame(now){const dt=Math.min(.05,(now-tm)/1000);tm=now;
  const ps=peersL(),want=G.ph=='menu'?DEMO:G.ph=='lobby'?players():(G.al||[]).map(id=>ps.find(p=>p.id==id)).filter(Boolean),n=Math.max(want.length,1),sp=ifp&&G.ph=='play'?Math.min(12.5,.9*2*ifd*.577*innerWidth/innerHeight/n):Math.min(2.2,(W-4)/n);
  const ids=new Set(want.map(p=>p.id));for(const id in avs)if(!ids.has(id)){sc.remove(avs[id].g);sc.remove(avs[id].fx);delete avs[id]}
  let lead=0,tail=-1e3,ldId=null;if(G.ph=='play'){let bp=0,bt=0;want.forEach(p=>{const q=p.pr.r===G.r?p.pr.p||0:0,t=p.pr.tt||0;if(q>bp||(q==bp&&q>0&&t<bt)){bp=q;bt=t;ldId=p.id}})}
- want.forEach((p,i)=>{const a=avs[p.id]||(avs[p.id]=mkAv(p.id,p.pr.n||'?',p.col));a.sp.visible=true;a.sp.scale.set(2.4,.6,1);a.cr.visible=p.id===ldId&&G.ph=='play';a.cr.rotation.y=now/300;const inR=p.pr.r===G.r&&G.ph!='lobby',pr=inR?Math.min(p.pr.p||0,TRACK):0;
+ want.forEach((p,i)=>{const a=avs[p.id]||(avs[p.id]=mkAv(p.id,p.pr.n||'?',p.col||p.pr?.col));a.sp.visible=true;a.sp.scale.set(2.4,.6,1);a.cr.visible=p.id===ldId&&G.ph=='play';a.cr.rotation.y=now/300;const inR=p.pr.r===G.r&&G.ph!='lobby',pr=inR?Math.min(p.pr.p||0,TRACK):0;
   if(pr>a.lp){a.jt=0}a.lp=pr;if((p.pr.w||0)!==a.lw){if(a.lw!==undefined)a.tp=1;a.lw=p.pr.w||0}a.tp=Math.max(0,(a.tp||0)-dt*.8);const tz=-(pr/TRACK)*L,tx=ifp&&G.ph=='play'?laneX(i,n,0):(i-(n-1)/2)*sp,mv=Math.abs(tz-a.z)>.05;
   const hold=a.tp>0&&G.ph=='play'&&1-a.tp<[.4,.4,.3,.35][MAPS[Math.min(G.r||0,3)].mv];if(!hold)a.z+=(tz-a.z)*(1-Math.exp(-dt*7));a.x+=(tx-a.x)*(1-Math.exp(-dt*9));a.jt=Math.min(1,a.jt+dt*1.6);
   const out=G.ph=='between'&&G.sv&&!G.sv.includes(p.id);a.sc+=((out?.01:1)-a.sc)*Math.min(1,dt*3);
@@ -544,4 +672,12 @@ function frame(now){const dt=Math.min(.05,(now-tm)/1000);tm=now;
  if(G.ph=='menu')lead=tail=-14;
  if(tail<-900)tail=lead;const wd=n*(ifp&&G.ph=='play'?2.2:sp),sprd=Math.min(30,tail-lead),mid=(lead+tail)/2;if(ifp&&G.ph=='play'){ifCam(0)}else{const ch=6+wd*.28+sprd*.45;cam.position.set(0,ch,mid+11+wd*.12+sprd*.4);cam.lookAt(0,0,mid-7)}cam.aspect=innerWidth/innerHeight;cam.fov=55;cam.updateProjectionMatrix();rd.setViewport(0,0,innerWidth,innerHeight);
  rd.render(sc,cam);requestAnimationFrame(frame)}
-loadAssets().then(()=>requestAnimationFrame(frame));ui();
+loadAssets().then(()=>{
+ if(typeof init3DIcons==='function'){
+  init3DIcons();
+  ovk='';
+  ui();
+ }
+ requestAnimationFrame(frame);
+});
+ui();
