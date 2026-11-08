@@ -1,0 +1,12 @@
+# Environment Variables (Jangan pernah di-commit ke Git)
+.env
+.env.local
+.env.*.local
+
+# Vercel & Node
+.vercel
+node_modules/
+
+# Backup files
+*.bak
+Lari Kuis 3D (2).html
