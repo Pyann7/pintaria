@@ -104,19 +104,46 @@ function parseQuestionsJson(rawText) {
 }
 
 /**
+ * Helper menyusun prompt terstruktur untuk AI (Jenjang, Kelas, Mapel, Kesulitan, Topik)
+ */
+function buildAiPrompt(topicInfo, count) {
+  let desc = '';
+  if (typeof topicInfo === 'string') {
+    desc = topicInfo.trim() || 'Pengetahuan Umum';
+  } else if (topicInfo && typeof topicInfo === 'object') {
+    const parts = [];
+    if (topicInfo.mapel) parts.push(`Mata Pelajaran: ${topicInfo.mapel}`);
+    if (topicInfo.jenjang) parts.push(`Jenjang: ${topicInfo.jenjang}`);
+    if (topicInfo.kelas) parts.push(`Kelas: ${topicInfo.kelas}`);
+    if (topicInfo.difficulty) parts.push(`Tingkat Kesulitan: ${topicInfo.difficulty}`);
+    if (topicInfo.topic && topicInfo.topic.trim()) {
+      parts.push(`Topik Khusus: "${topicInfo.topic.trim()}"`);
+    } else {
+      parts.push(`Topik: Standar kurikulum ${topicInfo.mapel || 'Pengetahuan Umum'}`);
+    }
+    desc = parts.join(', ');
+  } else {
+    desc = 'Pengetahuan Umum';
+  }
+
+  return `Buat TEPAT ${count} butir soal pilihan ganda bahasa Indonesia (${desc}) yang bervariasi, mendidik, dan sesuai tingkat pemahaman siswa.
+Aturan wajib:
+1. Jumlah soal harus TEPAT ${count} butir soal unik (untuk dibagi ke 4 babak permainan tanpa ada yang berulang).
+2. Pertanyaan jelas, ringkas, dan fokus materi (maksimal 95 karakter).
+3. Jawaban benar ringkas (maksimal 30 karakter).
+4. Sediakan tepat 3 pilihan jawaban salah yang masuk akal dan relevan (maksimal 30 karakter per pilihan).
+5. Jawaban benar dan salah harus seimbang dan tidak boleh membingungkan.
+6. Keluarkan HANYA JSON object dengan format:
+{"questions":[{"q":"Pertanyaan","a":"Jawaban Benar","w":["Salah 1","Salah 2","Salah 3"]}]}`;
+}
+
+/**
  * Provider 1: Groq Cloud
  */
-async function requestProviderA(topic, count, apiKey) {
+async function requestProviderA(topicInfo, count, apiKey) {
   if (!apiKey) throw new Error('Provider A key not configured');
 
-  const prompt = `Buat TEPAT ${count} soal pilihan ganda bahasa Indonesia yang berbeda-beda (tidak boleh berulang) tentang topik: "${topic}".
-Aturan wajib:
-1. Jumlah soal harus TEPAT ${count} butir soal unik (untuk dibagi ke 4 babak permainan).
-2. Pertanyaan jelas dan ringkas (maksimal 85 karakter).
-3. Jawaban benar ringkas (maksimal 25 karakter).
-4. Sediakan tepat 3 pilihan jawaban salah yang masuk akal (maksimal 25 karakter per pilihan).
-5. Keluarkan HANYA JSON object dengan format:
-{"questions":[{"q":"Pertanyaan","a":"Jawaban Benar","w":["Salah 1","Salah 2","Salah 3"]}]}`;
+  const prompt = buildAiPrompt(topicInfo, count);
 
   let lastError = null;
   for (const model of GROQ_MODELS) {
@@ -163,17 +190,10 @@ Aturan wajib:
 /**
  * Provider 2: Google AI Studio (Gemini)
  */
-async function requestProviderB(topic, count, apiKey) {
+async function requestProviderB(topicInfo, count, apiKey) {
   if (!apiKey) throw new Error('Provider B key not configured');
 
-  const prompt = `Buat TEPAT ${count} soal pilihan ganda bahasa Indonesia yang berbeda-beda (tidak boleh berulang) tentang topik: "${topic}".
-Aturan wajib:
-- Jumlah soal harus TEPAT ${count} butir soal unik (untuk dibagi ke 4 babak permainan).
-- Pertanyaan jelas dan ringkas (maksimal 85 karakter).
-- Jawaban benar ringkas (maksimal 25 karakter).
-- Tepat 3 pilihan jawaban salah (maksimal 25 karakter per pilihan).
-- Keluarkan HANYA JSON object persis dengan struktur:
-{"questions":[{"q":"Pertanyaan","a":"Jawaban Benar","w":["Salah 1","Salah 2","Salah 3"]}]}`;
+  const prompt = buildAiPrompt(topicInfo, count);
 
   let lastError = null;
   for (const model of GEMINI_MODELS) {
@@ -221,10 +241,16 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-    const rawTopic = String(body.topic || '').trim().slice(0, 120);
-    const topic = rawTopic || 'Pengetahuan Umum';
     const rawCount = parseInt(body.count, 10);
     const count = Number.isFinite(rawCount) ? Math.min(48, Math.max(4, rawCount)) : 20;
+
+    const topicInfo = {
+      jenjang: String(body.jenjang || '').trim(),
+      kelas: String(body.kelas || '').trim(),
+      mapel: String(body.mapel || '').trim(),
+      difficulty: String(body.difficulty || body.kesulitan || '').trim(),
+      topic: String(body.topic || '').trim().slice(0, 150)
+    };
 
     const groqKey = (process.env.GROQ_API_KEY || '').trim();
     const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
@@ -241,12 +267,12 @@ module.exports = async function handler(req, res) {
     // Urutan fallback berdasarkan prioritas (Default: Provider A -> Provider B)
     const tasks = primary === 'gemini'
       ? [
-          () => requestProviderB(topic, count, geminiKey),
-          () => requestProviderA(topic, count, groqKey)
+          () => requestProviderB(topicInfo, count, geminiKey),
+          () => requestProviderA(topicInfo, count, groqKey)
         ]
       : [
-          () => requestProviderA(topic, count, groqKey),
-          () => requestProviderB(topic, count, geminiKey)
+          () => requestProviderA(topicInfo, count, groqKey),
+          () => requestProviderB(topicInfo, count, geminiKey)
         ];
 
     for (const task of tasks) {

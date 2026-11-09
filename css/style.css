@@ -93,7 +93,10 @@ canvas#cv {
 }
 
 #mb { left: 16px; }
-#sb { right: 16px; }
+#sb {
+  right: 16px;
+  display: none !important;
+}
 
 /* Race Progress Bar & Rule Banner */
 #rb, #rl {
@@ -235,10 +238,23 @@ body.ifp #rl {
 }
 
 .tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
-  font-size: clamp(20px, 2.6vw, 30px);
-  text-shadow: 0 3px 0 #241454;
-  margin-bottom: 10px;
+  font-size: clamp(17px, 2vw, 24px);
+  font-weight: 900;
+  background: rgba(24, 12, 54, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 8px 24px;
+  border-radius: 999px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  margin-bottom: 16px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.02em;
+  max-width: 90vw;
 }
 
 /* 3D Arcade Buttons */
@@ -662,6 +678,20 @@ button.ok {
   font-size: 16px;
   font-weight: 900;
   color: #3b2866;
+}
+
+.setup-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.setup-field-hint {
+  font-size: 13px;
+  color: #5a4980;
+  font-weight: 700;
+  margin-top: 2px;
 }
 
 /* Quick Topic Chips Grid */

@@ -1,6 +1,6 @@
-# pintaria
+# eduxplay
 
-**Pintaria 3D** adalah game kuis balapan edukasi interaktif 3D berbasis AI untuk pembelajaran di kelas (IFP / Layar Sentuh & Multiplayer).
+**EduXPlay 3D** adalah game kuis balapan edukasi interaktif 3D berbasis AI untuk pembelajaran di kelas (IFP / Layar Sentuh & Multiplayer).
 
 ## Fitur Utama
 - **Full AI Question Generator**: Guru cukup memilih atau mengetik topik materi, dan soal dibuat otomatis untuk 4 babak berbeda.

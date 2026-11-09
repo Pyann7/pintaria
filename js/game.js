@@ -1,15 +1,84 @@
-// Pintaria 3D - Game Logic, 3D Rendering & UI Engine
+// EduXPlay 3D - Game Logic, 3D Rendering & UI Engine
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* ---------- state & network ---------- */
 let SRC='ai',SJ='ai',JM=20,TP='',mode='',sk=0,mv='home',NM='',ifp=false,iq=0,QS='',net=null,solo=false,isHost=false,code='',G={ph:'menu'},name='',lastR=-9,qi=0,qk='',cur=null,stun=0,hostT=0,localEnd=0,localStart=0,mp={p:0,tt:0,r:-1},bots=[],endingRound=false;
 let pCols=[0,1,2,3],pNames=['','','',''],myColIdx=0;
+let JJ='SD',KL='5',MP='Matematika',DF='Sedang';
 const hostOnly=()=>isHost&&!solo;
 try{
  QS=localStorage.getItem('lk_qs')||'';
  TP=localStorage.getItem('lk_tp')||'';
+ if(localStorage.getItem('lk_jj'))JJ=localStorage.getItem('lk_jj');
+ if(localStorage.getItem('lk_kl'))KL=localStorage.getItem('lk_kl');
+ if(localStorage.getItem('lk_mp'))MP=localStorage.getItem('lk_mp');
+ if(localStorage.getItem('lk_df'))DF=localStorage.getItem('lk_df');
  const initQ=QS.split('\n').filter(l=>l.split('|').length>=3).length;
  if(initQ){JM=initQ;TRACK=calcTrackFromQuestions(initQ)}
 }catch(e){}
+
+const JENJANG_LIST=[
+ ['SD','SD / Madrasah (MI)'],
+ ['SMP','SMP / MTs'],
+ ['SMA','SMA / SMK / MA'],
+ ['UMUM','Umum / Bebas']
+];
+
+function getKelasList(jenjang){
+ if(jenjang==='SD') return [
+  ['1','Kelas 1 (Fase A)'],
+  ['2','Kelas 2 (Fase A)'],
+  ['3','Kelas 3 (Fase B)'],
+  ['4','Kelas 4 (Fase B)'],
+  ['5','Kelas 5 (Fase C)'],
+  ['6','Kelas 6 (Fase C)'],
+  ['Semua SD','Semua Kelas SD']
+ ];
+ if(jenjang==='SMP') return [
+  ['7','Kelas 7 (Fase D)'],
+  ['8','Kelas 8 (Fase D)'],
+  ['9','Kelas 9 (Fase D)'],
+  ['Semua SMP','Semua Kelas SMP']
+ ];
+ if(jenjang==='SMA') return [
+  ['10','Kelas 10 (Fase E)'],
+  ['11','Kelas 11 (Fase F)'],
+  ['12','Kelas 12 (Fase F)'],
+  ['Semua SMA','Semua Kelas SMA']
+ ];
+ return [['Umum','Semua Umur / Umum']];
+}
+
+const MAPEL_LIST=[
+ ['Matematika','Matematika'],
+ ['IPAS / Sains','IPAS / Sains (IPA)'],
+ ['Bahasa Indonesia','Bahasa Indonesia'],
+ ['Bahasa Inggris','Bahasa Inggris'],
+ ['Pendidikan Pancasila','Pendidikan Pancasila (PPKn)'],
+ ['IPS / Sejarah','IPS / Sejarah'],
+ ['Pendidikan Agama','Pendidikan Agama & Budi Pekerti'],
+ ['Informatika','Informatika / Komputer'],
+ ['Seni Budaya','Seni Budaya'],
+ ['PJOK','PJOK (Penjas)'],
+ ['Pengetahuan Umum','Pengetahuan Umum']
+];
+
+const DIFFICULTY_LIST=[
+ ['Mudah','Mudah (Konsep Dasar)'],
+ ['Sedang','Sedang (Standar Kurikulum)'],
+ ['Sulit','Sulit (HOTS / Penalaran)']
+];
+
+function onJenjangChange(val){
+ JJ=val;
+ const kList=getKelasList(JJ);
+ KL=kList[0][0];
+ const sel=$('#kl');
+ if(sel){
+  sel.innerHTML=kList.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
+  sel.value=KL;
+ }
+ saveQS();
+}
 function peersL(){return solo?[...(ifp?[]:[{id:'me',isMe:true,pr:mp,col:mp.col}]),...bots.map(b=>({id:b.id,isMe:false,pr:b.pr,col:b.col}))]:net?net.peers().map(p=>({id:p.peer,isMe:p.sameTab,pr:p.presence||{},col:(p.presence&&p.presence.col)||null})):[]}
 const players=()=>peersL().filter(p=>!p.pr.h);
 const meId=()=>peersL().find(p=>p.isMe)?.id;
@@ -197,7 +266,7 @@ function cnt(){
    box.innerHTML=`${gi('check',24)}<span><b>${c} Soal Siap Dimainkan!</b> (${trk} Soal per Babak)</span>`;
   }else{
    box.className='status-box';
-   box.innerHTML=`${gi('ai',24)}<span>Ketik materi soal di atas lalu klik <b>Buat Soal Otomatis</b></span>`;
+   box.innerHTML=`${gi('ai',24)}<span>Tentukan mapel & topik di atas lalu klik <b>Buat Soal Otomatis</b></span>`;
   }
  }
  const det=$('#q-details');
@@ -217,21 +286,44 @@ function go(v,m){
 function saveQS(){
  if($('#cq'))QS=$('#cq').value;
  if($('#tp'))TP=$('#tp').value;
+ if($('#jj'))JJ=$('#jj').value;
+ if($('#kl'))KL=$('#kl').value;
+ if($('#mp'))MP=$('#mp').value;
+ if($('#df'))DF=$('#df').value;
  [0,1,2,3].forEach(i=>{if($('#n'+i))pNames[i]=$('#n'+i).value;});
  if($('#nm'))NM=$('#nm').value;
  try{
   localStorage.setItem('lk_qs',QS);
   localStorage.setItem('lk_tp',TP);
+  localStorage.setItem('lk_jj',JJ);
+  localStorage.setItem('lk_kl',KL);
+  localStorage.setItem('lk_mp',MP);
+  localStorage.setItem('lk_df',DF);
  }catch(e){}
 }
 
 async function ai(){
- const b=$('#aib'),tp=($('#tp')?$('#tp').value.trim():TP)||'Pengetahuan Umum',jm=parseInt($('#jm')?.value,10)||JM||20,box=$('#cn2');
- JM=jm;TP=tp;saveQS();
+ const b=$('#aib'),
+       jj=($('#jj')?$('#jj').value:JJ)||'SD',
+       kl=($('#kl')?$('#kl').value:KL)||'5',
+       mp=($('#mp')?$('#mp').value:MP)||'Matematika',
+       df=($('#df')?$('#df').value:DF)||'Sedang',
+       tp=($('#tp')?$('#tp').value.trim():TP),
+       jm=parseInt($('#jm')?.value,10)||JM||20,
+       box=$('#cn2');
+ JJ=jj;KL=kl;MP=mp;DF=df;TP=tp;JM=jm;saveQS();
  if(b){b.disabled=true;b.innerHTML=`${gi('clock',28)}<span>Sedang Membuat Soal...</span>`;}
- if(box){box.className='status-box';box.innerHTML=`${gi('clock',24)}<span>AI sedang membuat soal, mohon tunggu sebentar...</span>`;}
+ const subjectLabel = mp + (tp ? ` - "${tp}"` : '');
+ if(box){box.className='status-box';box.innerHTML=`${gi('clock',24)}<span>AI sedang menyusun ${jm} soal <b>${esc(subjectLabel)}</b> (${esc(jj)} Kelas ${esc(kl)} · ${esc(df)})...</span>`;}
  try{
-  const questions=await generateQuestionsFromServer(tp,jm,(statusMsg)=>{
+  const config={
+   jenjang:JJ,
+   kelas:KL,
+   mapel:MP,
+   difficulty:DF,
+   topic:TP
+  };
+  const questions=await generateQuestionsFromServer(config,jm,(statusMsg)=>{
    if(box)box.innerHTML=`${gi('clock',24)}<span>${esc(statusMsg)}</span>`;
   });
   const c=x=>String(x??'').replace(/[|\n\r]/g,' ').trim();
@@ -444,7 +536,6 @@ function ov(ps){
  if(G.ph=='menu'){
   const bk=`<button class=bk onclick="go('home')"><span>KEMBALI KE MENU</span></button>`;
   const op=(a,c)=>a.map(([v,t])=>`<option value="${v}" ${v==c?'selected':''}>${t}</option>`).join('');
-  const topics=['Matematika','IPA & Sains','Pancasila','Sejarah','Pengetahuan Umum','Bahasa Inggris'];
   h=mv=='setup'?`<div class=mn><div class="bd bd-land">
    <h2><span>${mode=='ifp'?'MULAI MAIN':'BUAT RUANG'}</span></h2>
 
@@ -460,32 +551,70 @@ function ov(ps){
     <!-- GRID 2: TAHAP 2 PEMBUATAN SOAL & PENGATURAN GAME -->
     <div class="ed-card">
      <div class="ed-title"><span class="step-badge">2</span><span>Tahap 2: Buat Soal & Pengaturan Game</span></div>
-     <label>Pilih Cepat atau Ketik Materi Soal
-      <div class="chip-row" style="margin-top:6px">
-       ${topics.map(t=>`<button type="button" class="chip" onclick="setTopic('${t}')">${t}</button>`).join('')}
+
+     <div class="setup-form-grid">
+      <!-- Baris 1: Jenjang & Kelas -->
+      <div class="ifg">
+       <label>Jenjang Pendidikan
+        <select id="jj" onchange="onJenjangChange(this.value)">
+         ${op(JENJANG_LIST,JJ)}
+        </select>
+       </label>
+       <label>Kelas
+        <select id="kl" onchange="KL=this.value;saveQS()">
+         ${op(getKelasList(JJ),KL)}
+        </select>
+       </label>
       </div>
-     </label>
-     <input id=tp placeholder="Ketik topik soal, mis: Perkalian, Hewan, Kemerdekaan..." value="${esc(TP)}" oninput="TP=this.value">
-     <div class=ifg>
-      <label>Jumlah Soal & Lintasan<select id=jm onchange="cnt()">${op([
-       [12,'12 Soal (3 Soal / Babak)'],
-       [20,'20 Soal (5 Soal / Babak)'],
-       [32,'32 Soal (8 Soal / Babak)']
-      ],JM)}</select></label>
-      <label>Waktu per Babak<select id=cfd>${op([
-       [45,'45 Detik'],
-       [70,'70 Detik'],
-       [90,'90 Detik'],
-       [120,'120 Detik']
-      ],DUR)}</select></label>
+
+      <!-- Baris 2: Mata Pelajaran & Tingkat Kesulitan -->
+      <div class="ifg">
+       <label>Mata Pelajaran (Mapel)
+        <select id="mp" onchange="MP=this.value;saveQS()">
+         ${op(MAPEL_LIST,MP)}
+        </select>
+       </label>
+       <label>Tingkat Kesulitan
+        <select id="df" onchange="DF=this.value;saveQS()">
+         ${op(DIFFICULTY_LIST,DF)}
+        </select>
+       </label>
+      </div>
+
+      <!-- Baris 3: Topik Materi Spesifik -->
+      <label>Topik / Bab Materi Spesifik
+       <input id="tp" placeholder="Ketik topik materi saja (mis: Pecahan Campuran, Tata Surya, Proklamasi)..." value="${esc(TP)}" oninput="TP=this.value;saveQS()">
+       <span class="setup-field-hint">Ketik topik materi yang ingin diujikan. Jenjang, kelas, dan mapel otomatis disesuaikan.</span>
+      </label>
+
+      <!-- Baris 4: Jumlah Soal & Waktu per Babak -->
+      <div class="ifg">
+       <label>Jumlah Soal & Lintasan
+        <select id="jm" onchange="cnt()">${op([
+         [12,'12 Soal (3 Soal / Babak)'],
+         [20,'20 Soal (5 Soal / Babak)'],
+         [32,'32 Soal (8 Soal / Babak)'],
+         [48,'48 Soal (12 Soal / Babak)']
+        ],JM)}</select>
+       </label>
+       <label>Waktu per Babak
+        <select id="cfd">${op([
+         [45,'45 Detik'],
+         [70,'70 Detik'],
+         [90,'90 Detik'],
+         [120,'120 Detik']
+        ],DUR)}</select>
+       </label>
+      </div>
      </div>
-     <button id=aib class="gb g-d s" onclick="ai()">${gi('ai',32)}<span>BUAT SOAL OTOMATIS</span></button>
-     <div id=cn2 class="status-box"></div>
+
+     <button id="aib" class="gb g-d s" onclick="ai()">${gi('ai',32)}<span>BUAT SOAL OTOMATIS</span></button>
+     <div id="cn2" class="status-box"></div>
      <details id="q-details" style="display:none;margin:0">
       <summary id="q-sum-txt" style="font-size:16px;font-weight:900;cursor:pointer;color:#7c3aed;font-family:'Nunito',sans-serif">Lihat Daftar Soal</summary>
       <div id="q-deck" class="q-deck" style="margin-top:8px"></div>
      </details>
-     <textarea id=cq style="display:none"></textarea>
+     <textarea id="cq" style="display:none"></textarea>
      <button class="gb g-b s" style="margin-top:auto" onclick="proceed()"><span>${mode=='ifp'?'MULAI MAIN SEKARANG':'BUAT RUANG SEKARANG'}</span></button>
     </div>
    </div>
@@ -496,7 +625,7 @@ function ov(ps){
    <label>Kode Ruang Permainan<input id=jc class=cd placeholder="KODE" maxlength=5></label>
    <button class="gb g-c s" onclick="enter(false,$('#jc').value.trim().toUpperCase())"><span>MASUK RUANG</span></button>
   </div>${bk}</div>`
-  :`<div class=mn><div class=logo><span>PINTA</span><span class=l2>RIA</span><b>3D</b></div><div class=tag>Jawab cepat, lompati rintangan, jadilah juara!</div>
+  :`<div class=mn><div class=logo><span>EDUX</span><span class=l2>PLAY</span><b>3D</b></div><div class=tag>Jawab cepat, lompati rintangan, jadilah juara!</div>
    <button class="gb g-a" onclick="go('setup','ifp')"><span>MULAI</span></button>
    <button class="gb g-b" onclick="go('setup','online')"><span>BUAT RUANG</span></button>
    <button class="gb g-c" onclick="go('join')"><span>GABUNG RUANG</span></button></div>`
@@ -532,7 +661,7 @@ function ov(ps){
  else if(G.ph=='end'){
   const T=G.top||[],c=['#ffd54f','#cfd8dc','#ffab76'],ht=[165,130,105],ord=[1,0,2],medals=['medal1','medal2','medal3'];
   h=`<div class=card>
-   <h2 class="modal-ribbon">${gi('crown',30)}<span>JUARA PINTARIA</span></h2>
+   <h2 class="modal-ribbon">${gi('crown',30)}<span>JUARA EDUXPLAY</span></h2>
    <div class=pd>${ord.filter(i=>T[i]).map(i=>`<div style="background:${c[i]};height:${ht[i]}px">${gi(medals[i],48)}<span>#${i+1} ${esc(T[i])}</span></div>`).join('')}</div>
    <div class=rs style="width:100%">${(G.res||[]).map((x,i)=>`<div class="${i===0?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?gi('flag',18)+' '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${i===0?gi('crown',20)+' JUARA 1':'Finalis'}</u></div>`).join('')}</div>
    ${isHost?`<button class="gb g-a s" onclick="again()">${gi('play',26)}<span>MAIN LAGI</span></button>`:''}

@@ -1,5 +1,5 @@
 /**
- * Pintaria 3D - Web Audio API Sound Effects & Backsound Engine
+ * EduXPlay 3D - Web Audio API Sound Effects & Backsound Engine
  * Menghasilkan musik latar (backsound) ceria ala game arcade & efek suara interaktif tanpa file MP3 eksternal.
  */
 
@@ -11,7 +11,7 @@ const SFX = (() => {
   let stepIdx = 0;
 
   try {
-    muted = localStorage.getItem('pintaria_mute') === '1';
+    muted = (localStorage.getItem('eduxplay_mute') ?? localStorage.getItem('pintaria_mute')) === '1';
   } catch (e) {}
 
   function ensureCtx() {
@@ -166,7 +166,7 @@ const SFX = (() => {
   function toggleMute() {
     muted = !muted;
     try {
-      localStorage.setItem('pintaria_mute', muted ? '1' : '0');
+      localStorage.setItem('eduxplay_mute', muted ? '1' : '0');
     } catch (e) {}
     updateMuteButton();
     if (muted) {
@@ -186,8 +186,7 @@ const SFX = (() => {
   function updateMuteButton() {
     const btn = document.getElementById('sb');
     if (btn) {
-      const ico = typeof gi === 'function' ? gi(muted ? 'soundOff' : 'soundOn', 26) : '';
-      btn.innerHTML = `${ico}<span>${muted ? 'Suara Mati' : 'Suara Aktif'}</span>`;
+      btn.innerHTML = `<span>${muted ? 'Suara Mati' : 'Suara Aktif'}</span>`;
       btn.className = 'gb ' + (muted ? 'alt' : 'g-a');
     }
   }

@@ -3,12 +3,22 @@
  * Memanggil endpoint backend (/api/generate) secara aman tanpa mengekspos API Key atau nama provider di browser.
  */
 
-async function generateQuestionsFromServer(topic, count, onStatus) {
+async function generateQuestionsFromServer(topicOrConfig, count, onStatus) {
   const notify = (msg) => {
     if (typeof onStatus === 'function') onStatus(msg);
   };
 
   notify('Sedang menyusun soal dengan AI...');
+
+  const payload = typeof topicOrConfig === 'object' && topicOrConfig !== null
+    ? {
+        ...topicOrConfig,
+        count: Number(count) || 20
+      }
+    : {
+        topic: String(topicOrConfig || 'Pengetahuan Umum').trim(),
+        count: Number(count) || 20
+      };
 
   let response;
   try {
@@ -17,10 +27,7 @@ async function generateQuestionsFromServer(topic, count, onStatus) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        topic: String(topic || 'Pengetahuan Umum').trim(),
-        count: Number(count) || 10
-      })
+      body: JSON.stringify(payload)
     });
   } catch (networkErr) {
     throw new Error('Gagal terhubung ke server pembuat soal. Pastikan aplikasi sudah berjalan di server/Vercel.');

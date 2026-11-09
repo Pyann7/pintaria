@@ -1,5 +1,5 @@
 /**
- * Pintaria 3D - 3D Game Asset Icon & Character Model Renderer
+ * EduXPlay 3D - 3D Game Asset Icon & Character Model Renderer
  * Merender aset 3D (karakter, gamepad, roket, pulau arena, tiket VIP, robot AI, mahkota, medali)
  * menggunakan Three.js + geometri GLB game (AS) dengan auto-framing penuh & pencahayaan studio 3D.
  */
@@ -94,7 +94,7 @@ function init3DIcons() {
   }
 
   /**
-   * Helper merakit karakter 3D Pintaria (menggunakan GLB AS jika sudah siap, atau geometri identik)
+   * Helper merakit karakter 3D EduXPlay (menggunakan GLB AS jika sudah siap, atau geometri identik)
    */
   function buildCharacterMesh(colHex, rimHex, pose = 'wave') {
     const g = new THREE.Group();
