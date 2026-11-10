@@ -12,7 +12,10 @@
 <body>
   <canvas id="cv"></canvas>
   <button id="mb" class="gb g-d" style="display:none" onclick="menuBtn()">Menu</button>
-  <button id="sb" class="gb g-a" style="display:none" onclick="SFX.toggleMute()">Suara Aktif</button>
+  <div class="top-bar-right">
+    <button id="fb" class="gb g-c" onclick="toggleFullScreen()" title="Layar Penuh">Layar Penuh</button>
+    <button id="sb" class="gb g-a" onclick="SFX.toggleMute()" title="Suara">Suara Aktif</button>
+  </div>
   <div id="hud"></div>
   <div id="rb"></div>
   <div id="rl"></div>

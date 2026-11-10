@@ -8,6 +8,11 @@ const hostOnly=()=>isHost&&!solo;
 try{
  QS=localStorage.getItem('lk_qs')||'';
  TP=localStorage.getItem('lk_tp')||'';
+ const defaultOldTopics=['Matematika','IPA & Sains','Pancasila','Sejarah','Pengetahuan Umum','Bahasa Inggris','IPAS / Sains','IPAS'];
+ if(defaultOldTopics.includes((TP||'').trim())){
+  TP='';
+  try{localStorage.setItem('lk_tp','')}catch(_){}
+ }
  if(localStorage.getItem('lk_jj'))JJ=localStorage.getItem('lk_jj');
  if(localStorage.getItem('lk_kl'))KL=localStorage.getItem('lk_kl');
  if(localStorage.getItem('lk_mp'))MP=localStorage.getItem('lk_mp');
@@ -108,6 +113,61 @@ function menuBtn(){
  updateMenuBtnText('Yakin? Ketuk lagi');
  setTimeout(()=>updateMenuBtnText('Menu'),3000);
 }
+
+/* ---------- Fullscreen & Minimize Toggle ---------- */
+function isFullScreen() {
+ return !!(
+  document.fullscreenElement ||
+  document.webkitFullscreenElement ||
+  document.mozFullScreenElement ||
+  document.msFullscreenElement
+ );
+}
+
+function toggleFullScreen() {
+ if (typeof SFX !== 'undefined') SFX.click();
+ try {
+  if (!isFullScreen()) {
+   const docEl = document.documentElement;
+   if (docEl.requestFullscreen) {
+    docEl.requestFullscreen().catch(() => {});
+   } else if (docEl.webkitRequestFullscreen) {
+    docEl.webkitRequestFullscreen();
+   } else if (docEl.mozRequestFullScreen) {
+    docEl.mozRequestFullScreen();
+   } else if (docEl.msRequestFullscreen) {
+    docEl.msRequestFullscreen();
+   }
+  } else {
+   if (document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {});
+   } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+   } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+   } else if (document.msExitFullscreen) {
+    document.msExitFullscreen();
+   }
+  }
+ } catch (e) {}
+ updateFullScreenButton();
+}
+
+function updateFullScreenButton() {
+ const btn = document.getElementById('fb');
+ if (!btn) return;
+ const fs = isFullScreen();
+ const icon = fs
+  ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5h2z"/></svg>'
+  : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+ btn.innerHTML = `${icon}<span>${fs ? 'Kecilkan' : 'Layar Penuh'}</span>`;
+ btn.title = fs ? 'Keluar dari Layar Penuh (Perkecil)' : 'Tampilkan Layar Penuh';
+ btn.className = 'gb ' + (fs ? 'g-b' : 'g-c');
+}
+
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(ev => {
+ document.addEventListener(ev, updateFullScreenButton);
+});
 
 function setTopic(t){
  TP=t;
@@ -522,6 +582,7 @@ function onG(){if(G.cfg&&(G.cfg.t!==TRACK||G.cfg.d!==DUR)){TRACK=G.cfg.t;DUR=G.c
 let ovk='';
 function ui(){
  if(typeof SFX!=='undefined')SFX.updateMuteButton();
+ updateFullScreenButton();
  updateMenuBtnText('Menu');
  const ps=players(),k=mv+G.ph+G.r+(G.al||[]).length+ps.length+(G.sv||[]).length;
  if(k!==ovk){ovk=k;ov(ps)}
@@ -583,8 +644,8 @@ function ov(ps){
 
       <!-- Baris 3: Topik Materi Spesifik -->
       <label>Topik / Bab Materi Spesifik
-       <input id="tp" placeholder="Ketik topik materi saja (mis: Pecahan Campuran, Tata Surya, Proklamasi)..." value="${esc(TP)}" oninput="TP=this.value;saveQS()">
-       <span class="setup-field-hint">Ketik topik materi yang ingin diujikan. Jenjang, kelas, dan mapel otomatis disesuaikan.</span>
+       <input id="tp" placeholder="Ketik topik yang ingin dibuat (mis: Pecahan, Tata Surya, Proklamasi)..." value="${esc(TP)}" oninput="TP=this.value;saveQS()">
+       <span class="setup-field-hint">Ketik topik materi yang ingin dibuat. Jika dikosongkan, AI otomatis membuat soal umum sesuai mata pelajaran & kelas.</span>
       </label>
 
       <!-- Baris 4: Jumlah Soal & Waktu per Babak -->
