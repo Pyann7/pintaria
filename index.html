@@ -15,6 +15,7 @@
 <body>
   <canvas id="cv"></canvas>
   <div class="top-bar-right">
+    <button id="cfg-btn" class="gb alt" onclick="openFirebaseConfigModal()" title="Pengaturan Firebase Realtime Database">⚙️ Server</button>
     <button id="fb" class="gb g-c" onclick="toggleFullScreen()" title="Layar Penuh">Layar Penuh</button>
     <button id="sb" class="gb g-a" onclick="SFX.toggleMute()" title="Suara">Suara Aktif</button>
   </div>
@@ -29,12 +30,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
+  <!-- Firebase Realtime Database (Compat CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
   <!-- Modular Game Scripts -->
   <script src="js/icons.js"></script>
   <script src="js/data.js"></script>
   <script src="js/assets.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/ai.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/net.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>
