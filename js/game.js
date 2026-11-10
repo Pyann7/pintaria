@@ -93,14 +93,25 @@ function bc(){if(!solo&&net)net.emit('g',G).catch(()=>{});onG()}
 async function enter(host,c){
  saveQS();
  const selCol=(typeof CHAR_COLORS!=='undefined'&&CHAR_COLORS[myColIdx])?CHAR_COLORS[myColIdx]:{name:'Pemain',hex:'#2f7de1'};
- name=($('#nm')?$('#nm').value.trim():NM).slice(0,14)||selCol.name;
+ name=($('#nm')?$('#nm').value.trim():NM).slice(0,14)||(host?'Guru (Host)':selCol.name);
  NM=name;
  isHost=host;
  try{const rm=window.claude&&await claude.use('room');if(!rm)throw 0;net=await rm.join('lk-'+c)}catch(e){alert('Mode ruang online membutuhkan server aktif. Gunakan tombol "MULAI" untuk langsung bermain.');return}
+ if(!host){
+  const curPeers=(net&&net.peers)?net.peers():[];
+  const curPlayers=curPeers.map(p=>p.presence).filter(pr=>pr&&!pr.h);
+  if(curPlayers.length>=30){
+   alert('Maaf, ruang permainan sudah penuh (Maksimal 30 siswa).');
+   try{if(net)net.leave()}catch(_){}
+   net=null;
+   go('home');
+   return;
+  }
+ }
  code=c;solo=false;mp={n:name,col:selCol.hex,h:host?1:0,p:0,tt:0,r:-1};net.presence(mp);
  net.on('g',m=>{if(!isHost&&m.data){G=m.data;onG()}});
- net.onPeers(()=>{if(isHost&&G.ph=='lobby'||isHost)bc0()});
- G={ph:'lobby',q:[]};ovk='';onG();if(host)setInterval(()=>{if(isHost)net.emit('g',G).catch(()=>{})},1000)}
+ net.onPeers(()=>{if(isHost&&G.ph=='lobby'||isHost)bc0();ovk='';ui()});
+ G={ph:'lobby',q:[]};ovk='';onG();if(host)setInterval(()=>{if(isHost&&net)net.emit('g',G).catch(()=>{})},1000)}
 function bc0(){}
 let mq=0;
 function updateMenuBtnText(txt){
@@ -598,15 +609,32 @@ function ov(ps){
   const bk=`<button class=bk onclick="go('home')"><span>KEMBALI KE MENU</span></button>`;
   const op=(a,c)=>a.map(([v,t])=>`<option value="${v}" ${v==c?'selected':''}>${t}</option>`).join('');
   h=mv=='setup'?`<div class=mn><div class="bd bd-land">
-   <h2><span>${mode=='ifp'?'MULAI MAIN':'BUAT RUANG'}</span></h2>
+   <h2><span>${mode=='ifp'?'MULAI MAIN':'BUAT RUANG KELAS'}</span></h2>
 
    <div class="setup-grid">
-    <!-- GRID 1: TAHAP 1 PEMILIHAN KARAKTER & NAMA KARAKTER -->
+    <!-- GRID 1: TAHAP 1 -->
     <div class="ed-card">
-     <div class="ed-title"><span class="step-badge">1</span><span>Tahap 1: Pilih Karakter & Nama Pemain</span></div>
+     <div class="ed-title"><span class="step-badge">1</span><span>${mode=='ifp'?'Tahap 1: Pilih Karakter & Nama Pemain':'Tahap 1: Profil Guru & Batas Pemain'}</span></div>
      ${mode=='ifp'?`<div class="char-grid">
       ${[0,1,2,3].map(i=>renderCharCard(i,false)).join('')}
-     </div>`:`${renderCharCard('me',true)}`}
+     </div>`:`<div class="setup-form-grid" style="flex:1">
+      <label>Nama Guru / Host (Pembuat Ruangan)
+       <input id="nm" placeholder="Nama Guru (mis: Pak Budi / Bu Guru)" value="${esc(NM||'Guru')}" oninput="NM=this.value;saveQS()">
+      </label>
+      <div class="host-role-card">
+       <div class="host-badge-row">
+        <span class="host-role-badge">${gi('crown',18)}<b>Host / Guru</b></span>
+        <span class="host-quota-badge">${gi('users',18)}<b>Maksimal 30 Siswa</b></span>
+       </div>
+       <div class="host-info-desc">
+        <p>Layar IFP / Laptop ini berperan sebagai <b>Server & Layar Siaran Balapan 3D Utama</b> untuk seluruh kelas.</p>
+        <p>Guru tidak mengontrol karakter pelari. Siswa bergabung menggunakan HP masing-masing (maksimal <b>30 siswa</b>) dengan memasukkan Kode Ruang.</p>
+        <div class="host-cam-note">
+         ${gi('flag',16)} <span><b>Kamera 3D Siswa:</b> Setiap siswa di HP-nya memiliki kamera pribadi 1 per 1 (mengikuti karakter sendiri dari belakang) saat menjawab & berlomba!</span>
+        </div>
+       </div>
+      </div>
+     </div>`}
     </div>
 
     <!-- GRID 2: TAHAP 2 PEMBUATAN SOAL & PENGATURAN GAME -->
@@ -693,6 +721,8 @@ function ov(ps){
  }
  else if(G.ph=='lobby'){
   const firstQuota=keepFor(0,ps.length);
+  const isFull=ps.length>=30;
+  const fullBadge=isFull?`<span style="background:#e5484d;color:#fff;padding:2px 10px;border-radius:99px;font-size:13px;border:2px solid #241454">Ruang Penuh (30/30)</span>`:'';
   h=`<div class=card>
    <h2 class="modal-ribbon">${gi('play',28)}<span>${ifp?'SIAP BERLOMBA':'RUANG TUNGGU'}</span></h2>
    ${ifp?'':`<div>Kode Ruang</div><div class=code>${esc(code)}</div>`}
@@ -701,7 +731,7 @@ function ov(ps){
     <span>${gi('flag',20)} ${TRACK} langkah/babak</span>
     <span>${gi('crown',20)} Babak 1: <b>${firstQuota}/${ps.length} Tercepat Lolos</b></span>
    </div>
-   <h3 style="margin:0;display:flex;align-items:center;gap:8px">${gi('users',24)}<span>Pemain (${ps.length})</span></h3>
+   <h3 style="margin:0;display:flex;align-items:center;justify-content:center;gap:8px">${gi('users',24)}<span>Pemain (${ps.length}/30 Siswa)</span>${fullBadge}</h3>
    <div class=pl>${nm||'Menunggu pemain bergabung…'}</div>
    ${isHost?`<button class="gb g-a s" onclick="startGame()">${gi('play',28)}<span>MULAI BABAK 1</span></button>`:'<h3>Menunggu guru memulai…</h3>'}
   </div>`;
@@ -770,7 +800,6 @@ function ans(i,b){
 }
 
 function hud(){
- $('#mb').style.display=G.ph=='menu'?'none':'inline-flex';
  $('#rl').textContent=G.ph=='play'?MAPS[G.r].rule:'';
  document.body.classList.toggle('ifp',!!ifp&&G.ph=='play');
  const r=G.ph=='play'||G.ph=='between'||G.ph=='end'?G.r:0;
@@ -781,7 +810,7 @@ function hud(){
   const fin=pl.filter(p=>(p.pr.p||0)>=TRACK).length;
   const quota=G.stopAt||G.kp||1;
   const quotaLabel=r===3?`${gi('crown',20)}<b>Final: ${fin}/1</b>`:`${gi('flag',20)}<b>Lolos: ${fin}/${quota}</b>`;
-  h=`<span>${MAPS[r].n} · Babak ${r+1}/4</span>${G.ph=='play'?`<span style="background:#1fa855">${quotaLabel}</span><span>${gi('clock',20)} ${l} dtk</span>`:''}<span>${gi('users',20)} ${(G.al&&G.ph!='lobby'?G.al:players()).length} Pemain</span>`
+  h=`<span>${MAPS[r].n} · Babak ${r+1}/4</span>${G.ph=='play'?`<span style="background:#1fa855">${quotaLabel}</span><span>${gi('clock',20)} ${l} dtk</span>`:''}<span>${gi('users',20)} ${(G.al&&G.ph!='lobby'?G.al:players()).length}/30 Siswa</span>`
  }
  if($('#hud').dataset.h!==h){$('#hud').innerHTML=h;$('#hud').dataset.h=h}
 }
@@ -860,7 +889,37 @@ function frame(now){const dt=Math.min(.05,(now-tm)/1000);tm=now;
   lead=Math.min(lead,a.z);tail=Math.max(tail,a.z)});
  spin.forEach((b,i)=>b.position.x=Math.sin(now/800+i*1.7)*W*.22);pul.forEach((o,i)=>o.scale.y=.7+.3*Math.abs(Math.sin(now/500+i)));bob.forEach((b,i)=>b.position.y=1+.5*Math.sin(now/400+i));
  if(G.ph=='menu')lead=tail=-14;
- if(tail<-900)tail=lead;const wd=n*(ifp&&G.ph=='play'?2.2:sp),sprd=Math.min(30,tail-lead),mid=(lead+tail)/2;if(ifp&&G.ph=='play'){ifCam(0)}else{const ch=6+wd*.28+sprd*.45;cam.position.set(0,ch,mid+11+wd*.12+sprd*.4);cam.lookAt(0,0,mid-7)}cam.aspect=innerWidth/innerHeight;cam.fov=55;cam.updateProjectionMatrix();rd.setViewport(0,0,innerWidth,innerHeight);
+ if(tail<-900)tail=lead;
+ const wd=n*(ifp&&G.ph=='play'?2.2:sp),sprd=Math.min(30,tail-lead),mid=(lead+tail)/2;
+
+ const myId=meId();
+ const myAv=(!isHost&&!ifp&&myId)?avs[myId]:null;
+
+ if(myAv&&G.ph=='play'){
+  // Sudut pandang kamera pemain di HP masing-masing 1 per 1 (3rd-person follow camera mengikuti karakter sendiri)
+  const camX=myAv.x;
+  const camY=Math.max(3.6,3.8+(myAv.g.position.y||0)*.35);
+  const camZ=myAv.z+7.4;
+  cam.position.set(camX,camY,camZ);
+  cam.lookAt(camX,1.2,myAv.z-14);
+ }else if(!isHost&&!ifp&&G.ph=='play'&&ldId&&avs[ldId]){
+  // Pemain yang gugur dapat menonton pemimpin lomba
+  const leadAv=avs[ldId];
+  cam.position.set(leadAv.x,4.2,leadAv.z+8.5);
+  cam.lookAt(leadAv.x,1.2,leadAv.z-14);
+ }else if(ifp&&G.ph=='play'){
+  // Mode 4 pemain lokal di layar IFP
+  ifCam(0);
+ }else{
+  // Siaran overview untuk Host / Guru di layar IFP / Proyektor atau Menu/Lobby
+  const ch=6+wd*.28+sprd*.45;
+  cam.position.set(0,ch,mid+11+wd*.12+sprd*.4);
+  cam.lookAt(0,0,mid-7);
+ }
+ cam.aspect=innerWidth/innerHeight;
+ cam.fov=(!isHost&&!ifp&&G.ph=='play')?(innerWidth<innerHeight?62:55):55;
+ cam.updateProjectionMatrix();
+ rd.setViewport(0,0,innerWidth,innerHeight);
  rd.render(sc,cam);requestAnimationFrame(frame)}
 loadAssets().then(()=>{
  if(typeof init3DIcons==='function'){

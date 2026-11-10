@@ -90,7 +90,7 @@ canvas#cv {
   z-index: 100;
 }
 
-#mb, #sb, #fb {
+#sb, #fb {
   width: auto !important;
   min-height: 46px !important;
   margin: 0 !important;
@@ -111,10 +111,9 @@ canvas#cv {
 }
 
 #mb {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  left: max(12px, env(safe-area-inset-left, 0px));
-  z-index: 100;
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 /* Race Progress Bar & Rule Banner */
@@ -212,10 +211,15 @@ body.ifp #rl {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: clamp(10px, 2vh, 18px);
-  padding: calc(env(safe-area-inset-top, 0px) + 24px) 12px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  justify-content: flex-start;
+  gap: clamp(8px, 1.4vh, 16px);
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 12px calc(env(safe-area-inset-bottom, 0px) + 20px);
   overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.mn > *:first-child:last-child {
+  margin: auto 0;
 }
 
 /* 3D Game Logo */
@@ -407,17 +411,20 @@ button.ok {
   box-sizing: border-box;
 }
 
-/* Landscape 2-Grid Setup Board - Ukuran Besar & Mudah Dibaca di IFP, Desktop & Mobile */
+/* Landscape 2-Grid Setup Board - Ukuran Pas & Rapi di IFP, Desktop & Mobile */
 .bd.bd-land {
-  width: min(96vw, 1420px);
-  padding: clamp(24px, 2.8vw, 34px) clamp(14px, 2vw, 28px) clamp(18px, 2vw, 26px);
-  gap: clamp(14px, 2vh, 20px);
+  width: min(96vw, 1340px);
+  max-height: calc(100vh - 84px);
+  overflow-y: auto;
+  margin: 32px auto 10px;
+  padding: clamp(14px, 1.8vh, 22px) clamp(14px, 1.8vw, 24px) clamp(10px, 1.4vh, 16px);
+  gap: clamp(8px, 1.2vh, 14px);
 }
 
 .setup-grid {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
-  gap: clamp(14px, 1.8vw, 24px);
+  gap: clamp(10px, 1.4vw, 18px);
   align-items: stretch;
   width: 100%;
 }
@@ -425,36 +432,37 @@ button.ok {
 @media (max-width: 1024px) {
   .setup-grid {
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 14px;
   }
   .bd.bd-land {
-    width: min(96vw, 700px);
-    margin: 32px auto 16px;
+    width: min(96vw, 720px);
+    max-height: none;
+    margin: 28px auto 12px;
   }
 }
 
 #ov .card {
   text-align: center;
   align-items: center;
-  max-height: 92vh;
+  max-height: 90vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .bd > h2, .modal-ribbon {
   align-self: center;
-  margin: -52px auto 2px !important;
+  margin: -36px auto 2px !important;
   width: fit-content;
   max-width: 90vw;
   font-weight: 400;
   background: linear-gradient(180deg, #ff70a6, #f73b82);
   color: #fff;
-  border: clamp(3.5px, 0.5vw, 5px) solid #241454;
+  border: clamp(3px, 0.4vw, 4.5px) solid #241454;
   border-radius: 18px;
-  padding: 6px clamp(18px, 3vw, 34px);
-  font-size: clamp(20px, 3vw, 36px);
+  padding: 5px clamp(16px, 2.5vw, 28px);
+  font-size: clamp(18px, 2.4vw, 32px);
   text-shadow: 0 3px 0 #241454;
-  box-shadow: 0 6px 0 #241454, inset 0 3px 0 #fff5;
+  box-shadow: 0 5px 0 #241454, inset 0 3px 0 #fff5;
   transform: rotate(-1.2deg);
   display: inline-flex;
   align-items: center;
@@ -467,38 +475,39 @@ button.ok {
 /* Section Cards Inside Setup */
 .ed-card {
   background: #ffffff;
-  border: 4px solid #241454;
-  border-radius: 24px;
-  padding: 20px 22px;
-  box-shadow: 0 6px 0 rgba(36, 20, 84, 0.12);
+  border: 3.5px solid #241454;
+  border-radius: 20px;
+  padding: clamp(10px, 1.4vh, 16px) clamp(12px, 1.4vw, 18px);
+  box-shadow: 0 5px 0 rgba(36, 20, 84, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: clamp(6px, 1vh, 10px);
   height: 100%;
+  box-sizing: border-box;
 }
 
 .ed-title {
-  font-size: clamp(20px, 2.2vw, 26px);
+  font-size: clamp(16px, 1.6vw, 20px);
   color: #241454;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin: 0;
-  padding-bottom: 10px;
-  border-bottom: 3px dashed rgba(36, 20, 84, 0.16);
+  padding-bottom: 6px;
+  border-bottom: 2.5px dashed rgba(36, 20, 84, 0.16);
 }
 
 .step-badge {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   background: linear-gradient(180deg, #ffb347, #f56a00);
   color: #fff;
-  border: 3px solid #241454;
-  box-shadow: 0 3px 0 #241454;
+  border: 2.5px solid #241454;
+  box-shadow: 0 2.5px 0 #241454;
   display: inline-grid;
   place-items: center;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 900;
   flex-shrink: 0;
 }
@@ -677,15 +686,15 @@ button.ok {
 .bd input, .bd select, .bd textarea {
   width: 100%;
   margin: 0;
-  min-height: clamp(48px, 6vh, 54px);
-  border: 3.5px solid #241454;
-  border-radius: 14px;
+  min-height: clamp(38px, 4.4vh, 46px);
+  border: 3px solid #241454;
+  border-radius: 12px;
   background: #fff;
   color: #241454;
   font-family: "Nunito", system-ui, sans-serif;
   font-weight: 800;
-  font-size: 16px;
-  padding: 10px 14px;
+  font-size: clamp(13px, 1.25vw, 15px);
+  padding: 6px 12px;
   box-sizing: border-box;
 }
 
@@ -695,20 +704,20 @@ button.ok {
 
 .bd input.cd {
   font-family: "Lilita One", sans-serif;
-  font-size: clamp(36px, 5.5vw, 56px);
+  font-size: clamp(32px, 5vw, 50px);
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.25em;
-  min-height: 68px;
+  min-height: 58px;
 }
 
 .bd label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   text-align: left;
   font-family: "Nunito", system-ui, sans-serif;
-  font-size: 16px;
+  font-size: clamp(12px, 1.15vw, 14px);
   font-weight: 900;
   color: #3b2866;
 }
@@ -716,8 +725,87 @@ button.ok {
 .setup-form-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: clamp(6px, 1vh, 10px);
   width: 100%;
+}
+
+/* Host / Guru Card in "BUAT RUANG" */
+.host-role-card {
+  background: #f7f3ff;
+  border: 3px solid #241454;
+  border-radius: 16px;
+  padding: clamp(10px, 1.4vh, 14px) clamp(12px, 1.4vw, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 0 rgba(36, 20, 84, 0.1);
+  margin-top: 2px;
+}
+
+.host-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.host-role-badge {
+  background: linear-gradient(180deg, #ffb347, #f56a00);
+  color: #fff;
+  border: 2.5px solid #241454;
+  border-radius: 99px;
+  padding: 3px 10px;
+  font-family: "Nunito", sans-serif;
+  font-size: clamp(11.5px, 1.1vw, 13px);
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 0 #241454;
+}
+
+.host-quota-badge {
+  background: linear-gradient(180deg, #2bb673, #1e8751);
+  color: #fff;
+  border: 2.5px solid #241454;
+  border-radius: 99px;
+  padding: 3px 10px;
+  font-family: "Nunito", sans-serif;
+  font-size: clamp(11.5px, 1.1vw, 13px);
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 0 #241454;
+}
+
+.host-info-desc {
+  font-family: "Nunito", sans-serif;
+  font-size: clamp(11.5px, 1.1vw, 13px);
+  font-weight: 700;
+  color: #3b2866;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.host-info-desc p {
+  margin: 0;
+}
+
+.host-cam-note {
+  background: #ffffff;
+  border: 2px dashed #8b4de0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: #4a228a;
+  font-size: clamp(11px, 1vw, 12px);
+  font-weight: 800;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.35;
 }
 
 .setup-field-hint {
@@ -1118,62 +1206,74 @@ body.ifp #qp > div {
 /* IFP (Interactive Flat Panel / 1080p, 2K, 4K Touchscreens in Classrooms) */
 @media (min-width: 1400px) and (min-height: 780px) {
   #hud {
-    font-size: 20px;
-    gap: 16px;
-    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    font-size: 18px;
+    gap: 14px;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
   }
   #hud span {
-    padding: 8px 24px;
-    font-size: 20px;
-  }
-  #mb, #sb, #fb {
-    min-height: 56px !important;
-    font-size: 19px !important;
-    padding: 8px 22px !important;
-    border-radius: 20px !important;
-  }
-  .bd.bd-land {
-    max-width: 1480px;
-    padding: 38px 34px 30px;
-  }
-  .setup-grid {
-    gap: 28px;
-  }
-  .ed-card {
-    padding: 24px 26px;
-    border-radius: 26px;
-  }
-  .ed-title {
-    font-size: 26px;
-  }
-  .step-badge {
-    width: 44px;
-    height: 44px;
-    font-size: 24px;
-  }
-  .bd input, .bd select, .bd textarea {
-    min-height: 60px;
-    font-size: 20px;
-    border-radius: 16px;
-  }
-  .bd label {
+    padding: 6px 18px;
     font-size: 18px;
   }
-  .setup-field-hint {
+  #sb, #fb {
+    min-height: 48px !important;
+    font-size: 16px !important;
+    padding: 6px 16px !important;
+    border-radius: 16px !important;
+  }
+  .bd.bd-land {
+    max-width: 1320px;
+    max-height: calc(100vh - 84px);
+    padding: 16px 26px 14px;
+    gap: 10px;
+  }
+  .setup-grid {
+    gap: 16px;
+  }
+  .ed-card {
+    padding: 14px 18px;
+    border-radius: 20px;
+    gap: 8px;
+  }
+  .ed-title {
+    font-size: 20px;
+  }
+  .step-badge {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+  .bd input, .bd select, .bd textarea {
+    min-height: 42px;
+    font-size: 16px;
+    padding: 6px 12px;
+    border-radius: 12px;
+  }
+  .bd label {
     font-size: 14px;
+    gap: 3px;
+  }
+  .setup-field-hint {
+    font-size: 12px;
   }
   .gb.s {
-    min-height: 72px;
-    font-size: 28px;
+    min-height: 50px;
+    font-size: 22px;
   }
   .status-box {
-    font-size: 19px;
-    padding: 14px 20px;
+    font-size: 15px;
+    padding: 8px 14px;
+  }
+  .bk {
+    min-height: 40px;
+    font-size: 15px;
+    padding: 6px 20px;
+    margin: 4px auto 10px;
   }
   body.ifp #qp {
-    height: 40vh;
-    max-height: 460px;
+    height: 38vh;
+    max-height: 420px;
   }
+}
   .ic {
     padding: 14px !important;
     border-radius: 22px !important;
@@ -1202,7 +1302,7 @@ body.ifp #qp > div {
     font-size: 12px;
     border-width: 2.5px;
   }
-  #mb, #sb, #fb {
+  #sb, #fb {
     min-height: 38px !important;
     padding: 4px 8px !important;
     font-size: 12px !important;
