@@ -82,8 +82,8 @@ canvas#cv {
 
 .top-bar-right {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  right: max(12px, env(safe-area-inset-right, 0px));
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  right: max(14px, env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
   gap: 8px;
@@ -92,14 +92,16 @@ canvas#cv {
 
 #sb, #fb, #cfg-btn {
   width: auto !important;
-  min-height: 46px !important;
+  min-height: 42px !important;
   margin: 0 !important;
-  font-size: clamp(13px, 1.35vw, 17px) !important;
+  font-size: clamp(12px, 1.25vw, 15px) !important;
+  font-family: 'Nunito', sans-serif !important;
+  font-weight: 900 !important;
   padding: 6px 14px !important;
-  border-radius: 16px !important;
-  border: 3.5px solid #241454 !important;
-  box-shadow: 0 4px 0 #241454, inset 0 2px 0 #fff4 !important;
-  gap: 7px !important;
+  border-radius: 999px !important;
+  border: 2.5px solid #241454 !important;
+  box-shadow: 0 3px 0 #241454, inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+  gap: 6px !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -108,6 +110,19 @@ canvas#cv {
   user-select: none;
   -webkit-user-select: none;
   white-space: nowrap;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.12s ease, filter 0.15s ease;
+}
+
+#sb:hover, #fb:hover, #cfg-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+#sb:active, #fb:active, #cfg-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #241454 !important;
 }
 
 #mb {
@@ -390,7 +405,7 @@ button.ok {
   font-size: clamp(14px, 1.4vw, 17px);
   padding: 8px 24px;
   min-height: 42px;
-  margin: 16px auto 8px;
+  margin: 14px auto 6px;
   touch-action: manipulation;
   display: inline-flex;
   align-items: center;
@@ -398,6 +413,90 @@ button.ok {
   gap: 8px;
   cursor: pointer;
   z-index: 5;
+}
+
+/* Main Menu Actions Stack (Juicy Arcade Buttons) */
+.menu-action-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 1.8vh, 16px);
+  width: min(92vw, 490px);
+  margin: 4px auto 0;
+}
+
+.menu-action-btn {
+  width: 100% !important;
+  min-height: clamp(64px, 8.5vh, 78px) !important;
+  display: grid !important;
+  grid-template-columns: auto 1fr !important;
+  align-items: center !important;
+  gap: clamp(12px, 2vw, 20px) !important;
+  padding: 8px clamp(16px, 2.2vw, 24px) !important;
+  border: clamp(3.5px, 0.4vw, 5px) solid #241454 !important;
+  border-radius: clamp(18px, 2.5vw, 24px) !important;
+  text-align: left !important;
+  box-shadow: 0 7px 0 #241454, 0 12px 24px rgba(0, 0, 0, 0.28), inset 0 3px 0 rgba(255, 255, 255, 0.4) !important;
+  transition: transform 0.15s cubic-bezier(0.2, 0.9, 0.3, 1.2), filter 0.15s ease, box-shadow 0.15s ease !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+  touch-action: manipulation !important;
+}
+
+.menu-action-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0));
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.menu-action-btn:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  filter: brightness(1.06) !important;
+  box-shadow: 0 9px 0 #241454, 0 16px 28px rgba(0, 0, 0, 0.32) !important;
+}
+
+.menu-action-btn:active {
+  transform: translateY(4px) !important;
+  box-shadow: 0 3px 0 #241454, inset 0 3px 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+.menu-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.32));
+  flex-shrink: 0;
+}
+
+.menu-btn-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-btn-title {
+  font-family: 'Lilita One', cursive, sans-serif;
+  font-size: clamp(22px, 3.2vw, 30px);
+  color: #ffffff;
+  letter-spacing: 0.03em;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.42);
+  line-height: 1.05;
+}
+
+.menu-btn-sub {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: clamp(12px, 1.35vw, 15px);
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  letter-spacing: 0.01em;
 }
 
 /* Game Modal Frame (.bd & #ov .card) */
@@ -408,9 +507,9 @@ button.ok {
   border: clamp(3.5px, 0.4vw, 5px) solid #241454;
   border-radius: clamp(20px, 2.5vw, 28px);
   box-shadow: 0 8px 0 #241454, 0 18px 40px rgba(0, 0, 0, 0.42);
-  padding: clamp(26px, 2.8vw, 34px) clamp(16px, 2.2vw, 28px) clamp(18px, 2vw, 24px);
+  padding: clamp(20px, 2.4vw, 30px) clamp(16px, 2.2vw, 26px) clamp(16px, 1.8vw, 22px);
   width: min(95vw, 680px);
-  margin: 36px auto 10px;
+  margin: 18px auto 10px;
   display: flex;
   flex-direction: column;
   gap: clamp(10px, 1.6vh, 16px);
@@ -422,15 +521,97 @@ button.ok {
 
 /* Landscape 2-Grid Setup & Lobby Board - Pas, Proporsional & Rapi */
 .bd.bd-land {
-  width: min(96vw, 1280px);
-  max-height: min(88vh, 760px);
+  width: min(96vw, 1200px);
+  max-height: min(90vh, 740px);
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: #ffb347 rgba(36, 20, 84, 0.1);
-  margin: 38px auto 10px;
-  padding: clamp(24px, 2.4vh, 32px) clamp(16px, 2vw, 26px) clamp(14px, 1.6vh, 20px);
+  margin: 16px auto 10px;
+  padding: clamp(20px, 2vh, 26px) clamp(16px, 1.8vw, 24px) 14px;
   gap: clamp(8px, 1.2vh, 14px);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  position: relative;
+  margin-top: -6px;
+  margin-bottom: 2px;
+}
+
+.modal-header-bar > h2 {
+  margin: 0 !important;
+}
+
+.modal-close-pill {
+  background: #fff;
+  border: 2.5px solid #241454;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  font-size: 17px;
+  font-weight: 900;
+  color: #241454;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #241454;
+  transition: transform 0.1s, background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.modal-close-pill:hover {
+  background: #ff6b6b;
+  color: #fff;
+  transform: scale(1.08);
+}
+
+.modal-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding-top: 4px;
+  margin-top: auto;
+}
+
+.bk-inline {
+  background: rgba(20, 26, 74, 0.95);
+  border: 3px solid #241454;
+  box-shadow: 0 4px 0 #241454;
+  border-radius: 99px;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(13px, 1.3vw, 16px);
+  font-weight: 800;
+  padding: 8px 24px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.15s ease;
+  touch-action: manipulation;
+}
+
+.bk-inline:hover {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+}
+
+.bk-inline:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #241454;
 }
 
 .bd.bd-land::-webkit-scrollbar {
@@ -462,7 +643,9 @@ button.ok {
   .bd.bd-land {
     width: min(96vw, 720px);
     max-height: none;
-    margin: 28px auto 12px;
+    margin: 20px auto 12px;
+  }
+}
   }
 }
 
@@ -655,13 +838,21 @@ button.ok {
 }
 
 .char-swatches {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  justify-items: center;
   align-items: center;
-  justify-content: center;
-  gap: 7px;
-  flex-wrap: wrap;
-  width: 100%;
-  padding: 4px 0;
+  width: fit-content;
+  max-width: 160px;
+  margin: 3px auto 5px;
+  padding: 2px 0;
+}
+
+.char-card.single .char-swatches {
+  grid-template-columns: repeat(8, 1fr);
+  max-width: 300px;
+  gap: 8px;
 }
 
 .char-dot {
@@ -898,6 +1089,213 @@ button.ok {
   background: #d3f5e2;
   color: #0d6832;
   border-color: #1b8a4b;
+}
+
+.status-box.status-warning {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.ai-btn-row {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 10px;
+  width: 100%;
+  align-items: stretch;
+}
+
+@media (max-width: 600px) {
+  .ai-btn-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.btn-offline-soal {
+  background: linear-gradient(180deg, #38bdf8, #0284c7);
+  color: #fff;
+  border: 3.5px solid #241454;
+  border-radius: 18px;
+  box-shadow: 0 4px 0 #241454, inset 0 2px 0 rgba(255, 255, 255, 0.35);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: clamp(13px, 1.3vw, 16px);
+  min-height: clamp(50px, 6.5vh, 60px);
+  padding: 8px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.1s ease, filter 0.15s ease;
+  touch-action: manipulation;
+  text-align: center;
+}
+
+.btn-offline-soal:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+}
+
+.btn-offline-soal:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #241454;
+}
+
+.btn-chip {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 2px solid #7c3aed;
+  border-radius: 99px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 5px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.12s;
+  touch-action: manipulation;
+}
+
+.btn-chip:hover {
+  background: #ddd6fe;
+}
+
+.btn-chip.alt {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #64748b;
+}
+
+/* In-Game Custom Modal & Toast System */
+#toast-container {
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+  width: max-content;
+  max-width: 90vw;
+}
+
+.game-toast {
+  background: rgba(20, 14, 46, 0.94);
+  color: #fff;
+  border: 3px solid #7c3aed;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  padding: 10px 22px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: clamp(13px, 1.3vw, 16px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toastIn 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  transition: opacity 0.3s, transform 0.3s;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.game-toast.success { border-color: #21b25e; }
+.game-toast.warning { border-color: #f59e0b; }
+.game-toast.error   { border-color: #ef4444; }
+.game-toast.hide    { opacity: 0; transform: translateY(12px); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 8, 30, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: fadeIn 0.18s ease;
+}
+
+.dialog-card {
+  position: relative;
+  background: #fff9eb;
+  border: 4px solid #241454;
+  border-radius: 24px;
+  box-shadow: 0 10px 0 #241454, 0 20px 45px rgba(0, 0, 0, 0.45);
+  width: min(94vw, 480px);
+  padding: 32px 22px 20px;
+  text-align: center;
+  animation: dialogPop 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  box-sizing: border-box;
+}
+
+.dialog-ribbon {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1deg);
+  background: linear-gradient(180deg, #ff70a6, #f73b82);
+  color: #fff;
+  border: 3.5px solid #241454;
+  border-radius: 14px;
+  padding: 5px 20px;
+  font-family: 'Lilita One', cursive, sans-serif;
+  font-size: clamp(16px, 2vw, 20px);
+  box-shadow: 0 4px 0 #241454, inset 0 2px 0 rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.dialog-ribbon.ribbon-warn {
+  background: linear-gradient(180deg, #ffb347, #f56a00);
+}
+
+.dialog-ribbon.ribbon-bad {
+  background: linear-gradient(180deg, #ff6b6b, #e5484d);
+}
+
+.dialog-body {
+  margin: 10px 0 18px;
+}
+
+.dialog-msg {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: clamp(14px, 1.4vw, 17px);
+  color: #241454;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes dialogPop {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .q-deck {

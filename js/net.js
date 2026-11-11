@@ -101,11 +101,21 @@ const RoomNet = (() => {
     let cachedPlayers = {};
     let cachedHost = isHost ? { pr: initialPresence } : null;
 
+    const notifyUser = (msg, title = 'Ruang Permainan') => {
+      if (typeof window.showGameDialog === 'function') {
+        window.showGameDialog({ title, message: msg, icon: '⚠️', type: 'warning' });
+      } else if (typeof window.showToast === 'function') {
+        window.showToast(msg, 'warning');
+      } else {
+        alert(msg);
+      }
+    };
+
     roomRef.child('host').on('value', snap => {
       cachedHost = snap.val();
       if (!isHost && !cachedHost && !isLeaving) {
         // Host keluar atau menutup ruangan
-        alert('Guru / Host telah menutup ruangan ini.');
+        notifyUser('Guru / Host telah menutup ruangan ini.', 'Ruangan Ditutup');
         if (activeNet) activeNet.leave();
         if (typeof go === 'function') go('home');
         return;
@@ -132,7 +142,7 @@ const RoomNet = (() => {
     if (!isHost) {
       roomRef.child('kicked/' + myId).on('value', snap => {
         if (snap.exists() && snap.val() === true) {
-          alert('Kamu telah dikeluarkan dari ruang kelas oleh Guru.');
+          notifyUser('Kamu telah dikeluarkan dari ruang kelas oleh Guru.', 'Dikeluarkan');
           if (activeNet) activeNet.leave();
           if (typeof go === 'function') go('home');
         }
@@ -261,12 +271,16 @@ const RoomNet = (() => {
           try { cb({ data: msg.data }); } catch (e) { console.error(e); }
         });
       } else if (msg.type === 'kick' && msg.target === myId) {
-        alert('Kamu telah dikeluarkan dari ruangan oleh Guru.');
+        if (typeof window.showGameDialog === 'function') {
+          window.showGameDialog({ title: 'Dikeluarkan', message: 'Kamu telah dikeluarkan dari ruangan oleh Guru.', icon: '🚪', type: 'warning' });
+        } else alert('Kamu telah dikeluarkan dari ruangan oleh Guru.');
         if (activeNet) activeNet.leave();
         if (typeof go === 'function') go('home');
       } else if (msg.type === 'leave') {
         if (msg.peerId === 'host' && !isHost) {
-          alert('Guru / Host telah menutup ruangan ini.');
+          if (typeof window.showGameDialog === 'function') {
+            window.showGameDialog({ title: 'Ruangan Ditutup', message: 'Guru / Host telah menutup ruangan ini.', icon: '⚠️', type: 'warning' });
+          } else alert('Guru / Host telah menutup ruangan ini.');
           if (activeNet) activeNet.leave();
           if (typeof go === 'function') go('home');
           return;

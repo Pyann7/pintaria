@@ -1,5 +1,151 @@
 // EduXPlay 3D - Game Logic, 3D Rendering & UI Engine
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- In-Game Custom Modal & Toast System ---------- */
+function showToast(message, type = 'info', duration = 3200) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `game-toast ${type}`;
+  const icon = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️';
+  toast.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-text">${esc(message)}</span>`;
+  container.appendChild(toast);
+  if (typeof SFX !== 'undefined') {
+    if (type === 'error' || type === 'warning') SFX.wrong();
+    else SFX.click();
+  }
+  setTimeout(() => {
+    toast.classList.add('hide');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+function showGameDialog({
+  title = 'Pemberitahuan',
+  message = '',
+  icon = 'ℹ️',
+  type = 'info',
+  confirmText = 'OK',
+  cancelText = 'Batal',
+  onConfirm = null,
+  onCancel = null,
+  buttons = null
+} = {}) {
+  closeGameDialog();
+  const backdrop = document.createElement('div');
+  backdrop.id = 'game-dialog-backdrop';
+  backdrop.className = 'dialog-backdrop';
+
+  let btnsHtml = '';
+  if (Array.isArray(buttons) && buttons.length) {
+    btnsHtml = buttons.map((b, idx) => `
+      <button type="button" class="gb ${b.class || 'g-a'} s" data-btn-idx="${idx}">
+        <span>${esc(b.text)}</span>
+      </button>
+    `).join('');
+  } else if (type === 'confirm') {
+    btnsHtml = `
+      <button type="button" class="gb alt s" id="dlg-cancel">
+        <span>${esc(cancelText)}</span>
+      </button>
+      <button type="button" class="gb g-a s" id="dlg-confirm">
+        <span>${esc(confirmText)}</span>
+      </button>
+    `;
+  } else {
+    const btnCls = type === 'error' ? 'bad' : type === 'warning' ? 'g-b' : 'g-a';
+    btnsHtml = `
+      <button type="button" class="gb ${btnCls} s" id="dlg-confirm">
+        <span>${esc(confirmText)}</span>
+      </button>
+    `;
+  }
+
+  const ribbonCls = type === 'error' ? 'ribbon-bad' : type === 'warning' ? 'ribbon-warn' : 'ribbon-default';
+
+  backdrop.innerHTML = `
+    <div class="dialog-card" role="dialog" aria-modal="true">
+      <div class="dialog-ribbon ${ribbonCls}">
+        <span>${icon} ${esc(title)}</span>
+      </div>
+      <div class="dialog-body">
+        <p class="dialog-msg">${esc(message)}</p>
+      </div>
+      <div class="dialog-actions">
+        ${btnsHtml}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+  if (typeof SFX !== 'undefined') {
+    if (type === 'error') SFX.wrong();
+    else SFX.click();
+  }
+
+  if (Array.isArray(buttons) && buttons.length) {
+    backdrop.querySelectorAll('[data-btn-idx]').forEach(btn => {
+      btn.onclick = () => {
+        const idx = Number(btn.getAttribute('data-btn-idx'));
+        closeGameDialog();
+        if (buttons[idx] && typeof buttons[idx].onClick === 'function') {
+          buttons[idx].onClick();
+        }
+      };
+    });
+  } else {
+    const cBtn = backdrop.querySelector('#dlg-confirm');
+    if (cBtn) {
+      cBtn.onclick = () => {
+        closeGameDialog();
+        if (typeof onConfirm === 'function') onConfirm();
+      };
+    }
+    const xBtn = backdrop.querySelector('#dlg-cancel');
+    if (xBtn) {
+      xBtn.onclick = () => {
+        closeGameDialog();
+        if (typeof onCancel === 'function') onCancel();
+      };
+    }
+  }
+}
+
+function closeGameDialog() {
+  const el = document.getElementById('game-dialog-backdrop');
+  if (el) el.remove();
+}
+
+window.showToast = showToast;
+window.showGameDialog = showGameDialog;
+window.closeGameDialog = closeGameDialog;
+
+function loadOfflineCurriculumQuestions(silent = false) {
+  const jm = parseInt($('#jm')?.value, 10) || JM || 20;
+  const mp = ($('#mp') ? $('#mp').value : MP) || 'Matematika';
+  const jj = ($('#jj') ? $('#jj').value : JJ) || 'SD';
+  const kl = ($('#kl') ? $('#kl').value : KL) || '5';
+  if (typeof window.generateCurriculumQuestions === 'function') {
+    QS = window.generateCurriculumQuestions(jj, kl, mp, jm);
+    if ($('#cq')) $('#cq').value = QS;
+    TRACK = calcTrackFromQuestions(jm);
+    mapI = -1;
+    cnt();
+    saveQS();
+    if (typeof SFX !== 'undefined') SFX.correct();
+    if (!silent) {
+      showToast(`✅ Berhasil memuat ${jm} Soal Kurikulum (${mp})!`, 'success');
+    }
+    return true;
+  }
+  return false;
+}
+window.loadOfflineCurriculumQuestions = loadOfflineCurriculumQuestions;
+
 /* ---------- state & network ---------- */
 let SRC='ai',SJ='ai',JM=20,TP='',mode='',sk=0,mv='home',NM='',ifp=false,iq=0,QS='',net=null,solo=false,isHost=false,code='',G={ph:'menu'},name='',lastR=-9,qi=0,qk='',cur=null,stun=0,hostT=0,localEnd=0,localStart=0,mp={p:0,tt:0,r:-1},bots=[],endingRound=false;
 let pCols=[0,1,2,3],pNames=['','','',''],myColIdx=0;
@@ -97,7 +243,7 @@ async function enter(host,c){
  NM=name;
  isHost=!!host;
  code=String(c||'').trim().toUpperCase();
- if(!code){alert('Silakan masukkan Kode Ruang!');return}
+ if(!code){showToast('Silakan masukkan Kode Ruang!','warning');return}
 
  mp={n:name,col:host?'#ffb300':selCol.hex,colId:selCol.id||'biru',h:host?1:0,p:0,tt:0,r:-1};
 
@@ -105,7 +251,7 @@ async function enter(host,c){
   net=await RoomNet.join(code,host,mp);
  }catch(err){
   if(typeof SFX!=='undefined')SFX.wrong();
-  alert(err.message||'Gagal masuk ke ruang permainan.');
+  showGameDialog({ title: 'Gagal Masuk', message: err.message||'Gagal masuk ke ruang permainan.', icon: '❌', type: 'error' });
   return;
  }
 
@@ -145,8 +291,23 @@ function createRoom(){
 
 function leaveRoom(){
  if(isHost){
-  if(!confirm('Apakah Anda yakin ingin menutup ruang kelas ini? Semua siswa yang terhubung akan keluar.'))return;
+  showGameDialog({
+   title: 'Tutup Ruang Kelas?',
+   message: 'Apakah Anda yakin ingin menutup ruang kelas ini? Semua siswa yang terhubung akan keluar ke menu utama.',
+   icon: '⚠️',
+   type: 'confirm',
+   confirmText: 'Ya, Tutup',
+   cancelText: 'Batal',
+   onConfirm: () => {
+    doLeaveRoom();
+   }
+  });
+  return;
  }
+ doLeaveRoom();
+}
+
+function doLeaveRoom(){
  if(net){
   try{net.leave();}catch(_){}
   net=null;
@@ -161,10 +322,19 @@ function kickStudent(pid){
  if(!isHost||!net)return;
  const target=players().find(p=>p.id===pid);
  const targetName=target?target.pr.n:'siswa ini';
- if(confirm(`Keluarkan ${targetName} dari ruangan?`)){
-  if(typeof SFX!=='undefined')SFX.click();
-  net.kick(pid);
- }
+ showGameDialog({
+  title: 'Keluarkan Siswa?',
+  message: `Apakah Anda yakin ingin mengeluarkan ${targetName} dari ruangan?`,
+  icon: '🚪',
+  type: 'confirm',
+  confirmText: 'Keluarkan',
+  cancelText: 'Batal',
+  onConfirm: () => {
+   if(typeof SFX!=='undefined')SFX.click();
+   net.kick(pid);
+   showToast(`${targetName} telah dikeluarkan.`, 'info');
+  }
+ });
 }
 
 function copyRoomCode(c){
@@ -172,12 +342,12 @@ function copyRoomCode(c){
  const textToCopy=c||code;
  if(navigator.clipboard&&navigator.clipboard.writeText){
   navigator.clipboard.writeText(textToCopy).then(()=>{
-   alert(`Kode Ruang "${textToCopy}" berhasil disalin ke clipboard!`);
+   showToast(`📋 Kode Ruang "${textToCopy}" berhasil disalin!`, 'success');
   }).catch(()=>{
-   prompt('Salin Kode Ruang berikut:',textToCopy);
+   showGameDialog({ title: 'Kode Ruang', message: `Kode Ruang Anda: ${textToCopy}`, icon: '📋' });
   });
  }else{
-  prompt('Salin Kode Ruang berikut:',textToCopy);
+  showGameDialog({ title: 'Kode Ruang', message: `Kode Ruang Anda: ${textToCopy}`, icon: '📋' });
  }
 }
 
@@ -256,19 +426,28 @@ function saveFirebaseModalConfig(){
  const cfg={databaseURL:dbUrl,apiKey:apiKey,projectId:projid};
  if(window.saveFirebaseConfig)window.saveFirebaseConfig(cfg);
  if(typeof SFX!=='undefined')SFX.correct();
- alert(dbUrl?'Konfigurasi Firebase berhasil disimpan! Game akan menggunakan Firebase Realtime Database.':'Konfigurasi dikosongkan. Game beralih ke Mode Lokal (BroadcastChannel).');
+ showToast(dbUrl?'✅ Konfigurasi Firebase berhasil disimpan!':'🔵 Game beralih ke Mode Lokal (BroadcastChannel).', 'success');
  closeFirebaseConfigModal();
  ovk='';
  ui();
 }
 
 function resetFirebaseModalConfig(){
- if(confirm('Reset konfigurasi Firebase kembali ke default (Mode Lokal)?')){
-  if(window.saveFirebaseConfig)window.saveFirebaseConfig({databaseURL:'',apiKey:'',projectId:''});
-  closeFirebaseConfigModal();
-  ovk='';
-  ui();
- }
+ showGameDialog({
+  title: 'Reset Konfigurasi?',
+  message: 'Reset konfigurasi Firebase kembali ke default (Mode Lokal)?',
+  icon: '⚙️',
+  type: 'confirm',
+  confirmText: 'Ya, Reset',
+  cancelText: 'Batal',
+  onConfirm: () => {
+   if(window.saveFirebaseConfig)window.saveFirebaseConfig({databaseURL:'',apiKey:'',projectId:''});
+   closeFirebaseConfigModal();
+   showToast('Konfigurasi telah direset ke default.', 'info');
+   ovk='';
+   ui();
+  }
+ });
 }
 function bc0(){}
 let mq=0;
@@ -471,10 +650,19 @@ async function proceed(){
  if($('#jm'))JM=parseInt($('#jm').value,10)||20;
  let q=parseQ();
  if(!q.length){
-  const ok=await ai();
-  if(!ok)return;
+  let ok=false;
+  try {
+    ok = await ai();
+  } catch(_) {}
+  if(!ok){
+    loadOfflineCurriculumQuestions(true);
+    showToast('🎮 Memuat Paket Soal Kurikulum Bawaan agar game dapat langsung dimulai!', 'info', 3500);
+  }
   q=parseQ();
-  if(!q.length)return;
+  if(!q.length){
+    loadOfflineCurriculumQuestions(true);
+    q=parseQ();
+  }
  }
  TRACK=calcTrackFromQuestions(q.length);
  mapI=-1;
@@ -566,8 +754,43 @@ async function ai(){
   return true;
  }catch(e){
   if(typeof SFX!=='undefined')SFX.wrong();
-  if(box){box.className='status-box';box.innerHTML=`${gi('cross',24)}<span style="color:var(--bad,#e5484d)">${esc(e.message)}</span>`;}
-  alert(e.message);
+  if(box){
+    box.className='status-box status-warning';
+    box.innerHTML=`${gi('cross',24)}<div style="display:flex;flex-direction:column;gap:6px;width:100%">
+      <span style="color:#b91c1c;font-weight:800">${esc(e.message)}</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+        <button type="button" class="btn-chip" onclick="loadOfflineCurriculumQuestions()">📚 Pakai Paket Soal Kurikulum Bawaan</button>
+        <button type="button" class="btn-chip alt" onclick="ai()">🔄 Coba Lagi AI</button>
+      </div>
+    </div>`;
+  }
+  showGameDialog({
+    title: 'Layanan AI Sedang Sibuk',
+    icon: '🤖',
+    type: 'warning',
+    message: 'Layanan AI pembuat soal saat ini sedang sibuk. Jangan khawatir! Kamu bisa langsung menggunakan Paket Soal Kurikulum Bawaan (SD/SMP/SMA) yang lengkap agar bisa langsung bermain tanpa kendala.',
+    buttons: [
+      {
+        text: '📚 Pakai Soal Kurikulum',
+        class: 'g-a',
+        onClick: () => {
+          loadOfflineCurriculumQuestions();
+        }
+      },
+      {
+        text: '🔄 Coba Lagi AI',
+        class: 'g-d',
+        onClick: () => {
+          ai();
+        }
+      },
+      {
+        text: 'Tutup',
+        class: 'alt',
+        onClick: () => {}
+      }
+    ]
+  });
   return false;
  }finally{
   if(b){b.disabled=false;b.innerHTML=`${gi('ai',30)}<span>BUAT SOAL OTOMATIS</span>`;}
@@ -682,12 +905,19 @@ function startRound(r){
 }
 
 function startGame(){
- const q=parseQ();
- if(!q.length){alert('Belum ada soal. Silakan kembali dan buat soal terlebih dahulu.');return}
+ let q=parseQ();
+ if(!q.length){
+  loadOfflineCurriculumQuestions(true);
+  q=parseQ();
+  showToast('📚 Menggunakan Paket Soal Kurikulum Bawaan!', 'info');
+ }
  TRACK=calcTrackFromQuestions(q.length);
  mapI=-1;
  G.q=q;G.sj='ai';G.elim=[];
- if(!players().length){alert('Belum ada pemain yang bergabung.');return}
+ if(!players().length){
+  showToast('Belum ada siswa / pemain yang bergabung di ruangan.', 'warning');
+  return;
+ }
  startRound(0)
 }
 
@@ -765,10 +995,13 @@ function ov(ps){
   return `<i>${dot}<span>${esc(p.pr.n)}</span></i>`;
  }).join('');
  if(G.ph=='menu'){
-  const bk=`<button class=bk onclick="go('home')"><span>KEMBALI KE MENU</span></button>`;
   const op=(a,c)=>a.map(([v,t])=>`<option value="${v}" ${v==c?'selected':''}>${t}</option>`).join('');
   h=mv=='setup'?`<div class=mn><div class="bd bd-land">
-   <h2><span>MULAI MAIN (4 PEMAIN)</span></h2>
+   <!-- Header Bar Modal -->
+   <div class="modal-header-bar">
+    <h2><span>MULAI MAIN (4 PEMAIN)</span></h2>
+    <button type="button" class="modal-close-pill" onclick="go('home')" title="Kembali ke Menu Utama">✕</button>
+   </div>
 
    <div class="setup-grid">
     <!-- GRID 1: 4 PEMAIN -->
@@ -815,7 +1048,7 @@ function ov(ps){
       <!-- Baris 3: Topik Materi Spesifik -->
       <label>Topik / Bab Materi Spesifik
        <input id="tp" placeholder="Ketik topik materi (mis: Pecahan, Tata Surya, Proklamasi)..." value="${esc(TP)}" oninput="TP=this.value;saveQS()">
-       <span class="setup-field-hint">Ketik topik materi yang ingin dibuat. Jika dikosongkan, AI otomatis membuat soal umum sesuai mata pelajaran & kelas.</span>
+       <span class="setup-field-hint">Ketik topik materi yang ingin dibuat. Jika dikosongkan, AI otomatis membuat soal umum sesuai mata pelajaran &amp; kelas.</span>
       </label>
 
       <!-- Baris 4: Jumlah Soal & Waktu per Babak -->
@@ -839,30 +1072,69 @@ function ov(ps){
       </div>
      </div>
 
-     <button id="aib" class="gb g-d s" onclick="ai()">${gi('ai',32)}<span>BUAT SOAL OTOMATIS</span></button>
+     <div class="ai-btn-row">
+      <button id="aib" class="gb g-d s" onclick="ai()">${gi('ai',30)}<span>BUAT SOAL OTOMATIS</span></button>
+      <button type="button" class="btn-offline-soal" onclick="loadOfflineCurriculumQuestions()" title="Gunakan bank soal kurikulum bawaan tanpa perlu internet/AI">
+       📚 Pakai Soal Kurikulum
+      </button>
+     </div>
+
      <div id="cn2" class="status-box"></div>
      <details id="q-details" style="display:none;margin:0">
-      <summary id="q-sum-txt" style="font-size:16px;font-weight:900;cursor:pointer;color:#7c3aed;font-family:'Nunito',sans-serif">Lihat Daftar Soal</summary>
+      <summary id="q-sum-txt" style="font-size:15px;font-weight:900;cursor:pointer;color:#7c3aed;font-family:'Nunito',sans-serif">Lihat Daftar Soal</summary>
       <div id="q-deck" class="q-deck" style="margin-top:8px"></div>
      </details>
      <textarea id="cq" style="display:none"></textarea>
-     <button class="gb g-b s" style="margin-top:auto" onclick="proceed()"><span>MULAI MAIN SEKARANG</span></button>
+     <button class="gb g-b s start-btn" onclick="proceed()">${gi('play',28)}<span>MULAI MAIN SEKARANG</span></button>
     </div>
    </div>
-  </div>${bk}</div>`
+
+   <!-- Modal Footer: Pinned di dalam modal card agar tidak pernah terpotong ke bawah -->
+   <div class="modal-footer-bar">
+    <button type="button" class="bk-inline" onclick="go('home')">
+     ${gi('back',20)} <span>KEMBALI KE MENU</span>
+    </button>
+   </div>
+  </div></div>`
   :mv=='join'?`<div class=mn><div class="bd" style="max-width:480px">
-   <h2><span>GABUNG RUANG KELAS</span></h2>
+   <div class="modal-header-bar">
+    <h2><span>GABUNG RUANG KELAS</span></h2>
+    <button type="button" class="modal-close-pill" onclick="go('home')" title="Kembali ke Menu Utama">✕</button>
+   </div>
    <div class="ed-title" style="margin-bottom:6px"><span class="step-badge">1</span><span>Pilih Karakter &amp; Warna Kamu</span></div>
    ${renderCharCard('me',true)}
    <div class="ed-title" style="margin:10px 0 6px"><span class="step-badge">2</span><span>Masukkan Kode Ruang</span></div>
    <label>Kode Ruang Permainan<input id=jc class=cd placeholder="KODE" maxlength=5 autocomplete="off" autocorrect="off" autocapitalize="characters" style="text-transform:uppercase"></label>
-   <button class="gb g-c s" style="margin-top:10px" onclick="enter(false,$('#jc').value.trim().toUpperCase())"><span>MASUK KE RUANG</span></button>
-   <button class=bk onclick="go('home')" style="margin-top:6px"><span>KEMBALI KE MENU</span></button>
+   <button class="gb g-c s" style="margin-top:10px" onclick="enter(false,$('#jc').value.trim().toUpperCase())">${gi('rocket',26)}<span>MASUK KE RUANG</span></button>
+   <button type="button" class="bk-inline" onclick="go('home')" style="margin:12px auto 0">${gi('back',18)} <span>KEMBALI KE MENU</span></button>
   </div></div>`
-  :`<div class=mn><div class=logo><span>EDUX</span><span class=l2>PLAY</span><b>3D</b></div><div class=tag>Jawab cepat, lompati rintangan, jadilah juara!</div>
-   <button class="gb g-a" onclick="go('setup','ifp')"><span>MULAI</span></button>
-   <button class="gb g-b" onclick="createRoom()"><span>BUAT RUANG</span></button>
-   <button class="gb g-c" onclick="go('join')"><span>GABUNG RUANG</span></button></div>`
+  :`<div class=mn>
+   <div class=logo><span>EDUX</span><span class=l2>PLAY</span><b>3D</b></div>
+   <div class=tag>Jawab cepat, lompati rintangan, jadilah juara!</div>
+   <div class="menu-action-stack">
+    <button class="gb g-a menu-action-btn" onclick="go('setup','ifp')">
+     <span class="menu-btn-icon">${gi('play',44)}</span>
+     <div class="menu-btn-content">
+      <span class="menu-btn-title">MULAI MAIN</span>
+      <span class="menu-btn-sub">4 Pemain Lokal · Layar IFP / Laptop</span>
+     </div>
+    </button>
+    <button class="gb g-b menu-action-btn" onclick="createRoom()">
+     <span class="menu-btn-icon">${gi('globe',44)}</span>
+     <div class="menu-btn-content">
+      <span class="menu-btn-title">BUAT RUANG</span>
+      <span class="menu-btn-sub">Guru / Host Kelas Realtime</span>
+     </div>
+    </button>
+    <button class="gb g-c menu-action-btn" onclick="go('join')">
+     <span class="menu-btn-icon">${gi('rocket',44)}</span>
+     <div class="menu-btn-content">
+      <span class="menu-btn-title">GABUNG RUANG</span>
+      <span class="menu-btn-sub">Siswa Masuk dengan Kode</span>
+     </div>
+    </button>
+   </div>
+  </div>`
  }
  else if(G.ph=='lobby'){
   const firstQuota=keepFor(0,ps.length);
@@ -993,7 +1265,12 @@ function ov(ps){
        </div>
       </div>
 
-      <button id="aib" class="gb g-d s" onclick="ai()">${gi('ai',28)}<span>BUAT SOAL OTOMATIS</span></button>
+      <div class="ai-btn-row">
+       <button id="aib" class="gb g-d s" onclick="ai()">${gi('ai',28)}<span>BUAT SOAL OTOMATIS</span></button>
+       <button type="button" class="btn-offline-soal" onclick="loadOfflineCurriculumQuestions()" title="Gunakan bank soal kurikulum bawaan tanpa perlu internet/AI">
+        📚 Pakai Soal Kurikulum
+       </button>
+      </div>
       <div id="cn2" class="status-box"></div>
       <details id="q-details" style="display:none;margin:0">
        <summary id="q-sum-txt" style="font-size:15px;font-weight:900;cursor:pointer;color:#7c3aed;font-family:'Nunito',sans-serif">Lihat Daftar Soal</summary>
@@ -1186,7 +1463,7 @@ function frame(now){const dt=Math.min(.05,(now-tm)/1000);tm=now;
  const ps=peersL(),want=G.ph=='menu'?DEMO:G.ph=='lobby'?players():(G.al||[]).map(id=>ps.find(p=>p.id==id)).filter(Boolean),n=Math.max(want.length,1),sp=ifp&&G.ph=='play'?Math.min(12.5,.9*2*ifd*.577*innerWidth/innerHeight/n):Math.min(2.2,(W-4)/n);
  const ids=new Set(want.map(p=>p.id));for(const id in avs)if(!ids.has(id)){sc.remove(avs[id].g);sc.remove(avs[id].fx);delete avs[id]}
  let lead=0,tail=-1e3,ldId=null;if(G.ph=='play'){let bp=0,bt=0;want.forEach(p=>{const q=p.pr.r===G.r?p.pr.p||0:0,t=p.pr.tt||0;if(q>bp||(q==bp&&q>0&&t<bt)){bp=q;bt=t;ldId=p.id}})}
- want.forEach((p,i)=>{const a=avs[p.id]||(avs[p.id]=mkAv(p.id,p.pr.n||'?',p.col||p.pr?.col));a.sp.visible=true;a.sp.scale.set(2.4,.6,1);a.cr.visible=p.id===ldId&&G.ph=='play';a.cr.rotation.y=now/300;const inR=p.pr.r===G.r&&G.ph!='lobby',pr=inR?Math.min(p.pr.p||0,TRACK):0;
+ want.forEach((p,i)=>{const a=avs[p.id]||(avs[p.id]=mkAv(p.id,p.pr.n||'?',p.col||p.pr?.col));a.sp.visible=G.ph!=='menu';a.sp.scale.set(2.4,.6,1);a.cr.visible=p.id===ldId&&G.ph=='play';a.cr.rotation.y=now/300;const inR=p.pr.r===G.r&&G.ph!='lobby',pr=inR?Math.min(p.pr.p||0,TRACK):0;
   if(pr>a.lp){a.jt=0}a.lp=pr;if((p.pr.w||0)!==a.lw){if(a.lw!==undefined)a.tp=1;a.lw=p.pr.w||0}a.tp=Math.max(0,(a.tp||0)-dt*.8);const tz=-(pr/TRACK)*L,tx=ifp&&G.ph=='play'?laneX(i,n,0):(i-(n-1)/2)*sp,mv=Math.abs(tz-a.z)>.05;
   const hold=a.tp>0&&G.ph=='play'&&1-a.tp<[.4,.4,.3,.35][MAPS[Math.min(G.r||0,3)].mv];if(!hold)a.z+=(tz-a.z)*(1-Math.exp(-dt*7));a.x+=(tx-a.x)*(1-Math.exp(-dt*9));a.jt=Math.min(1,a.jt+dt*1.6);
   const out=G.ph=='between'&&G.sv&&!G.sv.includes(p.id);a.sc+=((out?.01:1)-a.sc)*Math.min(1,dt*3);
@@ -1232,9 +1509,14 @@ function frame(now){const dt=Math.min(.05,(now-tm)/1000);tm=now;
   ifCam(0);
  }else{
   // Siaran overview untuk Host / Guru di layar IFP / Proyektor atau Menu/Lobby
-  const ch=6+wd*.28+sprd*.45;
-  cam.position.set(0,ch,mid+11+wd*.12+sprd*.4);
-  cam.lookAt(0,0,mid-7);
+  if(G.ph=='menu'){
+   cam.position.set(0, 7.8, 3.2);
+   cam.lookAt(0, 1.2, -18);
+  }else{
+   const ch=6+wd*.28+sprd*.45;
+   cam.position.set(0,ch,mid+11+wd*.12+sprd*.4);
+   cam.lookAt(0,0,mid-7);
+  }
  }
  cam.aspect=innerWidth/innerHeight;
  cam.fov=(!isHost&&!ifp&&G.ph=='play')?(innerWidth<innerHeight?62:55):55;
