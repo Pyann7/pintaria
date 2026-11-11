@@ -650,18 +650,15 @@ async function proceed(){
  if($('#jm'))JM=parseInt($('#jm').value,10)||20;
  let q=parseQ();
  if(!q.length){
-  let ok=false;
-  try {
-    ok = await ai();
-  } catch(_) {}
+  const ok = await ai();
   if(!ok){
-    loadOfflineCurriculumQuestions(true);
-    showToast('🎮 Memuat Paket Soal Kurikulum Bawaan agar game dapat langsung dimulai!', 'info', 3500);
+   showToast('Soal belum dibuat. Silakan klik "BUAT SOAL DENGAN AI" terlebih dahulu.', 'warning', 4000);
+   return;
   }
   q=parseQ();
   if(!q.length){
-    loadOfflineCurriculumQuestions(true);
-    q=parseQ();
+   showToast('Gagal memuat soal dari AI. Silakan coba lagi.', 'warning');
+   return;
   }
  }
  TRACK=calcTrackFromQuestions(q.length);
@@ -766,24 +763,16 @@ async function ai(){
     box.innerHTML=`${gi('cross',24)}<div style="display:flex;flex-direction:column;gap:6px;width:100%">
       <span style="color:#b91c1c;font-weight:800">${esc(e.message)}</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
-        <button type="button" class="btn-chip" onclick="loadOfflineCurriculumQuestions()">📚 Pakai Paket Soal Kurikulum Bawaan</button>
-        <button type="button" class="btn-chip alt" onclick="ai()">🔄 Coba Lagi AI</button>
+        <button type="button" class="btn-chip" onclick="ai()">🔄 Coba Lagi AI</button>
       </div>
     </div>`;
   }
   showGameDialog({
-    title: 'Layanan AI Sedang Sibuk',
+    title: 'Kendala Generator AI',
     icon: '🤖',
     type: 'warning',
-    message: 'Layanan AI pembuat soal saat ini sedang sibuk. Jangan khawatir! Kamu bisa langsung menggunakan Paket Soal Kurikulum Bawaan (SD/SMP/SMA) yang lengkap agar bisa langsung bermain tanpa kendala.',
+    message: e.message || 'Terjadi kendala saat menyusun soal dengan AI.',
     buttons: [
-      {
-        text: '📚 Pakai Soal Kurikulum',
-        class: 'g-a',
-        onClick: () => {
-          loadOfflineCurriculumQuestions();
-        }
-      },
       {
         text: '🔄 Coba Lagi AI',
         class: 'g-d',
@@ -800,7 +789,7 @@ async function ai(){
   });
   return false;
  }finally{
-  if(b){b.disabled=false;b.innerHTML=`${gi('ai',30)}<span>BUAT SOAL OTOMATIS</span>`;}
+  if(b){b.disabled=false;b.innerHTML=`${gi('ai',30)}<span>BUAT SOAL DENGAN AI</span>`;}
  }
 }
 
@@ -915,9 +904,8 @@ function startRound(r){
 function startGame(){
  let q=parseQ();
  if(!q.length){
-  loadOfflineCurriculumQuestions(true);
-  q=parseQ();
-  showToast('📚 Menggunakan Paket Soal Kurikulum Bawaan!', 'info');
+  showToast('Belum ada soal! Buat soal dengan AI terlebih dahulu.', 'warning');
+  return;
  }
  TRACK=calcTrackFromQuestions(q.length);
  mapI=-1;
@@ -1080,11 +1068,8 @@ function ov(ps){
       </div>
      </div>
 
-     <div class="ai-btn-row">
-      <button id="aib" class="gb g-d s" onclick="ai()">${gi('ai',30)}<span>BUAT SOAL OTOMATIS</span></button>
-      <button type="button" class="btn-offline-soal" onclick="loadOfflineCurriculumQuestions()" title="Gunakan bank soal kurikulum bawaan tanpa perlu internet/AI">
-       📚 Pakai Soal Kurikulum
-      </button>
+     <div class="ai-btn-row single-ai-btn">
+      <button id="aib" class="gb g-d s" onclick="ai()">${gi('ai',30)}<span>BUAT SOAL DENGAN AI</span></button>
      </div>
 
      <div id="cn2" class="status-box"></div>
