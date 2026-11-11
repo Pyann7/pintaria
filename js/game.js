@@ -146,8 +146,8 @@ function loadOfflineCurriculumQuestions(silent = false) {
 }
 window.loadOfflineCurriculumQuestions = loadOfflineCurriculumQuestions;
 
-/* ---------- state & network ---------- */
-let SRC='ai',SJ='ai',JM=20,TP='',mode='',sk=0,mv='home',NM='',ifp=false,iq=0,QS='',net=null,solo=false,isHost=false,code='',G={ph:'menu'},name='',lastR=-9,qi=0,qk='',cur=null,stun=0,hostT=0,localEnd=0,localStart=0,mp={p:0,tt:0,r:-1},bots=[],endingRound=false;
+/* ---------- state & network (IFP Pure Mode) ---------- */
+let SRC='ai',SJ='ai',JM=20,TP='',mode='ifp',sk=0,mv='home',NM='',ifp=true,iq=0,QS='',net=null,solo=true,isHost=true,code='IFP',G={ph:'menu'},name='',lastR=-9,qi=0,qk='',cur=null,stun=0,hostT=0,localEnd=0,localStart=0,mp={p:0,tt:0,r:-1},bots=[],endingRound=false;
 let pCols=[0,1,2,3],pNames=['','','',''],myColIdx=0;
 let JJ='SD',KL='5',MP='Matematika',DF='Sedang';
 const hostOnly=()=>isHost&&!solo;
@@ -698,6 +698,13 @@ function go(v,m){
  if($('#nm'))NM=$('#nm').value;
  [0,1,2,3].forEach(i=>{if($('#n'+i))pNames[i]=$('#n'+i).value;});
  if(m)mode=m;
+ if(v=='home'){
+  G={ph:'menu'};
+  mode='ifp';
+  ifp=true;
+  solo=true;
+  isHost=true;
+ }
  mv=v;ovk='';ui()
 }
 function saveQS(){
@@ -798,7 +805,7 @@ async function ai(){
 }
 
 function startIfp(){
- saveQS();solo=true;ifp=true;isHost=true;code='MULAI';
+ saveQS();solo=true;ifp=true;isHost=true;code='IFP';
  bots=[0,1,2,3].map(i=>{
   const col=getCharCol(pCols[i]||0);
   const typed=($('#n'+i)?$('#n'+i).value.trim():pNames[i].trim());
@@ -813,7 +820,8 @@ function startIfp(){
  const q=parseQ();
  TRACK=calcTrackFromQuestions(q.length);
  mapI=-1;
- G={ph:'lobby',q,sj:'ai',elim:[]};ovk='';onG()
+ G.q=q;G.sj='ai';G.elim=[];
+ startRound(0);
 }
 
 function finishRank(id){
@@ -973,7 +981,7 @@ function hostTick(){
 }
 setInterval(hostTick,250);
 const next=()=>startRound(G.r+1);
-const again=()=>{G={ph:'lobby',q:G.q,sj:'ai',elim:[]};lastR=-9;bc()};
+const again=()=>{if(ifp){startIfp()}else{G={ph:'lobby',q:G.q,sj:'ai',elim:[]};lastR=-9;bc()}};
 
 /* ---------- client UI ---------- */
 function onG(){if(G.cfg&&(G.cfg.t!==TRACK||G.cfg.d!==DUR)){TRACK=G.cfg.t;DUR=G.cfg.d;mapI=-1}if(G.ph=='play'&&G.r!==lastR){lastR=G.r;qi=0;qk='';sk=0;if(ifp){iq=0;bots.forEach(b=>{b.pr.r=G.r;b.pr.p=0;b.pr.tt=0;b.st=0;b.qi=0})}pres({p:0,tt:0,r:G.r});localStart=Date.now()}
@@ -1096,242 +1104,32 @@ function ov(ps){
     </button>
    </div>
   </div></div>`
-  :mv=='join'?`<div class=mn><div class="bd" style="max-width:480px">
-   <div class="modal-header-bar">
-    <h2><span>GABUNG RUANG KELAS</span></h2>
-    <button type="button" class="modal-close-pill" onclick="go('home')" title="Kembali ke Menu Utama">✕</button>
-   </div>
-   <div class="ed-title" style="margin-bottom:6px"><span class="step-badge">1</span><span>Pilih Karakter &amp; Warna Kamu</span></div>
-   ${renderCharCard('me',true)}
-   <div class="ed-title" style="margin:10px 0 6px"><span class="step-badge">2</span><span>Masukkan Kode Ruang</span></div>
-   <label>Kode Ruang Permainan<input id=jc class=cd placeholder="KODE" maxlength=5 autocomplete="off" autocorrect="off" autocapitalize="characters" style="text-transform:uppercase"></label>
-   <button class="gb g-c s" style="margin-top:10px" onclick="enter(false,$('#jc').value.trim().toUpperCase())">${gi('rocket',26)}<span>MASUK KE RUANG</span></button>
-   <button type="button" class="bk-inline" onclick="go('home')" style="margin:12px auto 0">${gi('back',18)} <span>KEMBALI KE MENU</span></button>
-  </div></div>`
   :`<div class=mn>
    <div class=logo><span>EDUX</span><span class=l2>PLAY</span><b>3D</b></div>
    <div class=tag>Jawab cepat, lompati rintangan, jadilah juara!</div>
-   <div class="menu-action-stack">
-    <button class="gb g-a menu-action-btn" onclick="go('setup','ifp')">
-     <span class="menu-btn-icon">${gi('play',44)}</span>
+   <div class="menu-action-stack single-btn">
+    <button class="gb g-a menu-action-btn ifp-hero-btn" onclick="go('setup','ifp')">
+     <span class="menu-btn-icon">${gi('play',50)}</span>
      <div class="menu-btn-content">
-      <span class="menu-btn-title">MULAI MAIN</span>
-      <span class="menu-btn-sub">4 Pemain Lokal · Layar IFP / Laptop</span>
-     </div>
-    </button>
-    <button class="gb g-b menu-action-btn" onclick="createRoom()">
-     <span class="menu-btn-icon">${gi('globe',44)}</span>
-     <div class="menu-btn-content">
-      <span class="menu-btn-title">BUAT RUANG</span>
-      <span class="menu-btn-sub">Guru / Host Kelas Realtime</span>
-     </div>
-    </button>
-    <button class="gb g-c menu-action-btn" onclick="go('join')">
-     <span class="menu-btn-icon">${gi('rocket',44)}</span>
-     <div class="menu-btn-content">
-      <span class="menu-btn-title">GABUNG RUANG</span>
-      <span class="menu-btn-sub">Siswa Masuk dengan Kode</span>
+      <span class="menu-btn-title">MULAI MAIN (IFP)</span>
+      <span class="menu-btn-sub">Kuis Balapan 4 Pemain · Layar Sentuh IFP / Laptop</span>
      </div>
     </button>
    </div>
   </div>`
  }
  else if(G.ph=='lobby'){
-  const firstQuota=keepFor(0,ps.length);
-  const isFull=ps.length>=30;
-  const op=(a,c)=>a.map(([v,t])=>`<option value="${v}" ${v==c?'selected':''}>${t}</option>`).join('');
-  const isFirebase=window.isFirebaseConfigured&&window.isFirebaseConfigured();
-
-  if(isHost){
-   // TAMPILAN RUANG TUNGGU GURU / HOST ALA QUIZIZZ
-   h=`<div class=mn><div class="bd bd-land">
-    <h2><span>RUANG KELAS · GURU</span></h2>
-
-    <!-- Top Info Bar: Kode & Panduan Siswa -->
-    <div class="lobby-host-header">
-     <div class="lobby-code-group">
-      <div class="lobby-code-badge">
-       <small>KODE RUANG</small>
-       <b>${esc(code)}</b>
-      </div>
-      <button type="button" class="copy-pill-btn" onclick="copyRoomCode('${esc(code)}')">
-       📋 Salin Kode
-      </button>
-     </div>
-     <div class="lobby-instructions">
-      📱 Minta siswa buka web di HP &gt; pilih <b>GABUNG RUANG</b> &gt; masukkan kode <b>${esc(code)}</b>
-     </div>
-     <span class="lobby-status-tag ${isFirebase?'online':'local'}">
-      ${isFirebase?'🟢 Firebase RTDB Online':'🔵 Mode Lokal'}
-     </span>
-    </div>
-
-    <!-- Body: 2 Kolom -->
-    <div class="lobby-split-grid">
-     <!-- Kolom Kiri: Roster Siswa Bergabung -->
-     <div class="student-roster-pane">
-      <div class="student-roster-hdr">
-       <span style="display:inline-flex;align-items:center;gap:8px">${gi('users',22)} Siswa Bergabung</span>
-       <span class="student-count-pill">${ps.length} / 30 Siswa</span>
-      </div>
-
-      <div class="student-list-container">
-       ${ps.length===0?`
-        <div class="lobby-empty-radar">
-         <div class="radar-circle">
-          ${gi('users',34)}
-         </div>
-         <div class="empty-txt-bold">Menunggu Siswa Bergabung...</div>
-         <div class="empty-txt-sub">Siswa di kelas membuka browser di HP masing-masing, memilih <b>GABUNG RUANG</b>, dan mengetikkan kode <b>${esc(code)}</b>.</div>
-        </div>
-       `:`
-        <div class="student-grid">
-         ${ps.map(p=>{
-          const col=p.col||'#2f7de1';
-          const initial=(p.pr.n||'?')[0].toUpperCase();
-          return `
-           <div class="student-card" style="border-color:${col}">
-            <span class="student-avatar-dot" style="background:${col}">${initial}</span>
-            <span class="student-name" title="${esc(p.pr.n)}">${esc(p.pr.n)}</span>
-            <button type="button" class="kick-btn" onclick="kickStudent('${p.id}')" title="Keluarkan Siswa">✕</button>
-           </div>
-          `;
-         }).join('')}
-        </div>
-       `}
-      </div>
-
-      <div style="font-family:'Nunito',sans-serif;font-size:12.5px;color:#4a3672;font-weight:700;display:flex;justify-content:space-between;align-items:center;padding:0 4px">
-       <span>Babak 1: <b>${firstQuota}/${Math.max(1,ps.length)} Tercepat Lolos</b></span>
-       <span>Maksimal 30 Siswa</span>
-      </div>
-     </div>
-
-     <!-- Kolom Kanan: Buat Soal & Pengaturan Game -->
-     <div class="ed-card">
-      <div class="ed-title"><span class="step-badge">2</span><span>Pengaturan Soal &amp; AI Generator</span></div>
-      <div class="setup-form-grid">
-       <!-- Baris 1: Jenjang & Kelas -->
-       <div class="ifg">
-        <label>Jenjang Pendidikan
-         <select id="jj" onchange="onJenjangChange(this.value)">
-          ${op(JENJANG_LIST,JJ)}
-         </select>
-        </label>
-        <label>Kelas
-         <select id="kl" onchange="KL=this.value;saveQS()">
-          ${op(getKelasList(JJ),KL)}
-         </select>
-        </label>
-       </div>
-
-       <!-- Baris 2: Mapel & Tingkat Kesulitan -->
-       <div class="ifg">
-        <label>Mata Pelajaran (Mapel)
-         <select id="mp" onchange="MP=this.value;saveQS()">
-          ${op(MAPEL_LIST,MP)}
-         </select>
-        </label>
-        <label>Tingkat Kesulitan
-         <select id="df" onchange="DF=this.value;saveQS()">
-          ${op(DIFFICULTY_LIST,DF)}
-         </select>
-        </label>
-       </div>
-
-       <!-- Baris 3: Topik -->
-       <label>Topik / Bab Materi Spesifik
-        <input id="tp" placeholder="Ketik topik materi (mis: Pecahan, Tata Surya)..." value="${esc(TP)}" oninput="TP=this.value;saveQS()">
-       </label>
-
-       <!-- Baris 4: Jumlah Soal & Waktu -->
-       <div class="ifg">
-        <label>Jumlah Soal &amp; Lintasan
-         <select id="jm" onchange="cnt()">${op([
-          [12,'12 Soal (3 Soal / Babak)'],
-          [20,'20 Soal (5 Soal / Babak)'],
-          [32,'32 Soal (8 Soal / Babak)'],
-          [48,'48 Soal (12 Soal / Babak)']
-         ],JM)}</select>
-        </label>
-        <label>Waktu per Babak
-         <select id="cfd">${op([
-          [45,'45 Detik'],
-          [70,'70 Detik'],
-          [90,'90 Detik'],
-          [120,'120 Detik']
-         ],DUR)}</select>
-        </label>
-       </div>
-      </div>
-
-      <div class="ai-btn-row">
-       <button id="aib" class="gb g-d s" onclick="ai()">${gi('ai',28)}<span>BUAT SOAL OTOMATIS</span></button>
-       <button type="button" class="btn-offline-soal" onclick="loadOfflineCurriculumQuestions()" title="Gunakan bank soal kurikulum bawaan tanpa perlu internet/AI">
-        📚 Pakai Soal Kurikulum
-       </button>
-      </div>
-      <div id="cn2" class="status-box"></div>
-      <details id="q-details" style="display:none;margin:0">
-       <summary id="q-sum-txt" style="font-size:15px;font-weight:900;cursor:pointer;color:#7c3aed;font-family:'Nunito',sans-serif">Lihat Daftar Soal</summary>
-       <div id="q-deck" class="q-deck" style="margin-top:8px"></div>
-      </details>
-      <textarea id="cq" style="display:none"></textarea>
-     </div>
-    </div>
-
-    <!-- Bottom Actions -->
-    <div style="display:flex;gap:12px;width:100%;align-items:center;margin-top:auto">
-     <button class="gb g-a s" style="flex:1" onclick="startGame()">
-      ${gi('play',28)}<span>MULAI PERMAINAN SEKARANG</span>
-     </button>
-     <button class="gb alt s" style="width:auto;min-height:50px;padding:0 22px" onclick="leaveRoom()">
-      <span>Tutup Ruang</span>
-     </button>
-    </div>
-   </div></div>`;
-  } else if(!ifp){
-   // TAMPILAN RUANG TUNGGU SISWA DI HP
-   h=`<div class=mn><div class="bd" style="max-width:520px;text-align:center">
-    <h2><span>RUANG TUNGGU SISWA</span></h2>
-    <div class="student-badge-tag">Kode Ruang: <b>${esc(code)}</b></div>
-
-    <div class="student-hero-banner" style="border-color:${mp.col}">
-     <img src="${(typeof ICONS!=='undefined'&&ICONS['char_'+(mp.colId||'biru')])?ICONS['char_'+(mp.colId||'biru')]:''}" alt="Karakter Kamu">
-     <div class="student-hero-col">
-      <span class="student-hero-name">Halo, ${esc(mp.n)}!</span>
-      <span class="student-hero-pill" style="background:${mp.col}">Karakter ${esc(selCol.name)}</span>
-     </div>
-    </div>
-
-    <div class="student-wait-alert">
-     ${gi('clock',24)}
-     <div>
-      <b>Menunggu Guru Memulai Permainan...</b><br>
-      Kuis balapan 3D akan segera dimulai secara serentak di layar kelas!
-     </div>
-    </div>
-
-    <div class="classmates-block">
-     <div class="classmates-label">${gi('users',18)} Teman Sekelas (${ps.length} Siswa):</div>
-     <div class="pl" style="max-height:120px;overflow-y:auto;justify-content:center">${nm||'Menunggu teman lain...'}</div>
-    </div>
-
-    <button class="gb alt s" onclick="leaveRoom()" style="margin-top:6px"><span>Keluar dari Ruang</span></button>
-   </div></div>`;
-  } else {
-   // MODE IFP 4 PEMAIN LOKAL
-   h=`<div class=mn><div class="bd" style="max-width:580px;text-align:center">
-    <h2><span>SIAP BERLOMBA</span></h2>
-    <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;display:flex;gap:12px;justify-content:center">
-     <span>${gi('clock',20)} ${DUR} dtk/babak</span>
-     <span>${gi('flag',20)} ${TRACK} langkah/babak</span>
-    </div>
-    <div class="pl" style="justify-content:center">${nm}</div>
-    <button class="gb g-a s" onclick="startGame()">${gi('play',28)}<span>MULAI BABAK 1</span></button>
-    <button class="bk" onclick="go('home')"><span>KEMBALI KE MENU</span></button>
-   </div></div>`;
-  }
+  // MODE IFP 4 PEMAIN LOKAL
+  h=`<div class=mn><div class="bd" style="max-width:580px;text-align:center">
+   <h2><span>SIAP BERLOMBA</span></h2>
+   <div style="font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;display:flex;gap:12px;justify-content:center;margin:12px 0">
+    <span>${gi('clock',20)} ${DUR} dtk/babak</span>
+    <span>${gi('flag',20)} ${TRACK} langkah/babak</span>
+   </div>
+   <div class="pl" style="justify-content:center;margin-bottom:16px">${nm}</div>
+   <button class="gb g-a s" onclick="startRound(0)">${gi('play',28)}<span>MULAI BABAK 1</span></button>
+   <button type="button" class="bk-inline" onclick="go('home')" style="margin:12px auto 0">${gi('back',18)} <span>KEMBALI KE MENU</span></button>
+  </div></div>`;
  }
  else if(G.ph=='between'){
   const nextR=Math.min(G.r+1,3);
@@ -1352,7 +1150,10 @@ function ov(ps){
    <h2 class="modal-ribbon">${gi('crown',30)}<span>JUARA EDUXPLAY</span></h2>
    <div class=pd>${ord.filter(i=>T[i]).map(i=>`<div style="background:${c[i]};height:${ht[i]}px">${gi(medals[i],48)}<span>#${i+1} ${esc(T[i])}</span></div>`).join('')}</div>
    <div class=rs style="width:100%">${(G.res||[]).map((x,i)=>`<div class="${i===0?'ok':'no'}"><b>#${i+1}</b><span>${esc(x[0])}</span><i>${x[1]>=TRACK?gi('flag',18)+' '+(x[2]/1000).toFixed(1)+' dtk':x[1]+'/'+TRACK+' langkah'}</i><u>${i===0?gi('crown',20)+' JUARA 1':'Finalis'}</u></div>`).join('')}</div>
-   ${isHost?`<button class="gb g-a s" onclick="again()">${gi('play',26)}<span>MAIN LAGI</span></button>`:''}
+   <div style="display:flex;gap:12px;width:100%;margin-top:12px;align-items:center">
+    <button class="gb g-a s" style="flex:1" onclick="again()">${gi('play',26)}<span>MAIN LAGI</span></button>
+    <button type="button" class="bk-inline" style="margin:0;width:auto;padding:0 24px;min-height:54px" onclick="go('home')">${gi('back',18)} <span>KEMBALI KE MENU</span></button>
+   </div>
   </div>`;
  }
  o.innerHTML=h;
@@ -1407,7 +1208,9 @@ function hud(){
   const fin=pl.filter(p=>(p.pr.p||0)>=TRACK).length;
   const quota=G.stopAt||G.kp||1;
   const quotaLabel=r===3?`${gi('crown',20)}<b>Final: ${fin}/1</b>`:`${gi('flag',20)}<b>Lolos: ${fin}/${quota}</b>`;
-  h=`<span>${MAPS[r].n} · Babak ${r+1}/4</span>${G.ph=='play'?`<span style="background:#1fa855">${quotaLabel}</span><span>${gi('clock',20)} ${l} dtk</span>`:''}<span>${gi('users',20)} ${(G.al&&G.ph!='lobby'?G.al:players()).length}/30 Siswa</span>`
+  const totalPlayers=(G.al&&G.ph!='lobby'?G.al:players()).length;
+  const playerLabel=ifp?`${totalPlayers} Pemain`:`${totalPlayers}/30 Siswa`;
+  h=`<span>${MAPS[r].n} · Babak ${r+1}/4</span>${G.ph=='play'?`<span style="background:#1fa855">${quotaLabel}</span><span>${gi('clock',20)} ${l} dtk</span>`:''}<span>${gi('users',20)} ${playerLabel}</span>`
  }
  if($('#hud').dataset.h!==h){$('#hud').innerHTML=h;$('#hud').dataset.h=h}
 }
